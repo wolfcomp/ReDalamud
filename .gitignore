@@ -301,6 +301,10 @@ paket-files/
 # FAKE - F# Make
 .fake/
 
+# JetBrains Rider
+.idea/
+*.sln.iml
+
 # CodeRush personal settings
 .cr/personal
 
@@ -347,3 +351,5 @@ healthchecksdb
 
 # Backup folder for Package Reference Convert tool in Visual Studio 2017
 MigrationBackup/
+
+global.json
