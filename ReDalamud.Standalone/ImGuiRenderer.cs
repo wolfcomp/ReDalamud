@@ -27,6 +27,8 @@ public partial class ImGuiRenderer
         ImGui.SetCurrentContext(ImGui.CreateContext());
         RebuildFontAtlas();
         InitKeyMap();
+        var io = ImGui.GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
 
         _vboHandle = GL.GenBuffer();
         _elmHandle = GL.GenBuffer();
