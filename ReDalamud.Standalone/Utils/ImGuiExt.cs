@@ -99,4 +99,129 @@ public static class ImGuiExt
     {
         ImGui.PushStyleColor(ImGuiCol.Text, (Vector4)color);
     }
+
+    public static bool InputText(string label, ref string text, ref string changed)
+    {
+        if (!EditTexts.TryGetValue(label, out var edit))
+        {
+            edit = EditTexts[label] = new EditText(text);
+        }
+        return edit.Draw(ref changed);
+    }
+
+    public static bool InputInt(string label, ref int value, ref int changed, bool displayHex = false)
+    {
+        if (!EditInts.TryGetValue(label, out var edit))
+        {
+            edit = EditInts[label] = new EditInt(value);
+        }
+        return edit.Draw(ref changed, displayHex);
+    }
+
+    private static readonly Dictionary<string, EditText> EditTexts = new();
+    private static readonly Dictionary<string, EditInt> EditInts = new();
+
+    private class EditText(string text)
+    {
+        public bool Editing;
+        private string _text = text;
+        private string _buffer = text;
+
+        public bool Draw(ref string buffer)
+        {
+            if (!Editing)
+            {
+                ImGui.TextUnformatted(_text);
+                if (ImGui.IsItemHovered() && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                {
+                    foreach (var (_, editText) in EditTexts)
+                    {
+                        editText.Editing = false;
+                    }
+
+                    foreach (var (_, editInt) in EditInts)
+                    {
+                        editInt.Editing = false;
+                    }
+                    Editing = true;
+                }
+            }
+            else
+            {
+                ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(0, 0));
+                ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
+                if (ImGui.InputText("##edit", ref _buffer, 100, ImGuiInputTextFlags.EnterReturnsTrue))
+                {
+                    Editing = false;
+                }
+                if (Editing)
+                {
+                    ImGui.SetKeyboardFocusHere(-1);
+                }
+                ImGui.PopStyleVar(2);
+            }
+            buffer = _buffer;
+
+            var shouldTrue = _text != _buffer && !Editing;
+            if (shouldTrue)
+            {
+                _text = _buffer;
+            }
+            return shouldTrue;
+        }
+    }
+
+    private class EditInt(int inp)
+    {
+        public bool Editing;
+        private int _value = inp;
+        private int _buffer = inp;
+
+        public bool Draw(ref int buffer, bool displayHex)
+        {
+            if (!Editing)
+            {
+                ImGui.TextUnformatted(_value.ToString());
+                if (ImGui.IsItemHovered() && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                {
+                    Editing = true;
+                }
+            }
+            else
+            {
+                ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(0, 0));
+                ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
+                if (ImGui.InputInt("##edit", ref _buffer, 1, 100, ImGuiInputTextFlags.EnterReturnsTrue | (displayHex ? ImGuiInputTextFlags.CharsHexadecimal : ImGuiInputTextFlags.CharsDecimal)))
+                {
+                    foreach (var (_, editText) in EditTexts)
+                    {
+                        editText.Editing = false;
+                    }
+
+                    foreach (var (_, editInt) in EditInts)
+                    {
+                        editInt.Editing = false;
+                    }
+                    Editing = false;
+                }
+                if (Editing)
+                {
+                    ImGui.SetKeyboardFocusHere(-1);
+                    if(ImGui.IsKeyReleased(ImGuiKey.UpArrow))
+                        _buffer += 1;
+                    if(ImGui.IsKeyReleased(ImGuiKey.DownArrow))
+                        _buffer -= 1;
+                }
+                ImGui.PopStyleVar(2);
+            }
+            buffer = _buffer;
+
+            var shouldTrue = _value != _buffer && !Editing;
+            if (shouldTrue)
+            {
+                _value = _buffer;
+            }
+            return shouldTrue;
+        }
+    }
 }

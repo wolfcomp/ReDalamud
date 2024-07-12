@@ -1,14 +1,16 @@
 ﻿using ReDalamud.Standalone.Utils;
+using System.Globalization;
 using System.Text;
 
 namespace ReDalamud.Standalone.Windows;
-public class ClassView(nint offset) : ICloneable
+public class ClassView(string offset) : ICloneable
 {
-    public nint Offset = offset;
+    public string Offset = offset;
     public string Name = GenerateRandomName();
     public int Size = 0x80;
-    private bool _displaySizeAsHex = false;
-    private bool _isCollapsed = false;
+    private bool _displaySizeAsHex;
+    private bool _isCollapsed;
+    private nint _offset = nint.Parse(offset, NumberStyles.AllowHexSpecifier);
 
     private static string GenerateRandomName()
     {
@@ -23,7 +25,7 @@ public class ClassView(nint offset) : ICloneable
             ImGui.Begin($"ClassView##{Offset}");
         }
 
-        var bytes = MemoryRead.ReadBytes(Offset, Size);
+        var bytes = MemoryRead.ReadBytes(_offset, Size);
 
         if (bytes.Length > 0)
         {
@@ -44,6 +46,7 @@ public class ClassView(nint offset) : ICloneable
                     ImGuiExt.PushTextStyleColor(Config.Styles.TextColor);
                     for (var j = 0; j < 8; j++)
                     {
+                        if (i + j >= bytes.Length) break;
                         ImGui.Text($"{GetByteChar(bytes[i + j])}");
                         ImGui.SameLine(0, 0);
                     }
@@ -52,17 +55,45 @@ public class ClassView(nint offset) : ICloneable
                     ImGuiExt.PushTextStyleColor(Config.Styles.HexValueColor);
                     for (var j = 0; j < 8; j++)
                     {
+                        if (i + j >= bytes.Length) break;
                         ImGui.Text($"{bytes[i + j]:X2}");
                         ImGui.SameLine();
                     }
                     ImGui.PopStyleColor();
                     ImGuiExt.PushTextStyleColor(Config.Styles.ValueColor);
-                    var dob = double.Round(ConvertBits.ToDouble(bytes, i), 3, MidpointRounding.ToEven);
-                    ImGui.Text($"{dob}");
-                    ImGui.SameLine();
-                    var lng = ConvertBits.ToInt64(bytes, i);
-                    ImGui.Text($"{lng}");
-                    var hex = ConvertBits.ToString(bytes, i, 8).Replace("-", "").TrimStart('0');
+                    if (i + 8 <= bytes.Length)
+                    {
+                        var dob = ConvertBits.ToDouble(bytes, i).ToString("F3");
+                        ImGui.Text($"{dob}");
+                        ImGui.SameLine();
+                        var lng = ConvertBits.ToInt64(bytes, i);
+                        ImGui.Text($"{lng}");
+                    }
+                    else
+                    {
+                        if (i + 4 == bytes.Length)
+                        {
+                            var flt = ConvertBits.ToSingle(bytes, i).ToString("F3");
+                            ImGui.Text($"{flt}");
+                            ImGui.SameLine();
+                            var lng = ConvertBits.ToInt32(bytes, i);
+                            ImGui.Text($"{lng}");
+                        }
+                        else if (i + 2 == bytes.Length)
+                        {
+                            var sht = ConvertBits.ToInt16(bytes, i);
+                            ImGui.Text($"{sht}");
+                            ImGui.SameLine();
+                            var usht = ConvertBits.ToUInt16(bytes, i);
+                            ImGui.Text($"{usht}");
+                        }
+                        else
+                        {
+                            var b = bytes[i];
+                            ImGui.Text($"{b}");
+                        }
+                    }
+                    var hex = ConvertBits.ToString(bytes, i, Math.Min(8, bytes.Length - i - 1)).Replace("-", "").TrimStart('0');
                     if (!string.IsNullOrWhiteSpace(hex))
                     {
                         ImGui.SameLine();
@@ -96,26 +127,33 @@ public class ClassView(nint offset) : ICloneable
         ImGui.Image(IconLoader.GetIconTextureId(Icon16.ClassType), new Vector2(16));
         ImGui.SameLine();
         ImGuiExt.PushTextStyleColor(Config.Styles.AddressColor);
-        ImGui.Text($"{Offset:X}");
+        var changed = "";
+        ImGui.PushItemWidth(ImGui.CalcTextSize(string.IsNullOrWhiteSpace(Name) ? "." : Name).X);
+        if (ImGuiExt.InputText($"OffsetEdit##{Offset}", ref Offset, ref changed))
+        {
+            Offset = changed.Trim();
+            _offset = nint.Parse(Offset, NumberStyles.AllowHexSpecifier);
+        }
         ImGui.PopStyleColor();
         ImGui.SameLine();
         ImGuiExt.PushTextStyleColor(Config.Styles.TypeColor);
         ImGui.Text("Class");
+        ImGui.PopStyleColor();
         ImGui.SameLine();
         ImGuiExt.PushTextStyleColor(Config.Styles.NameColor);
         ImGui.PushItemWidth(ImGui.CalcTextSize(string.IsNullOrWhiteSpace(Name) ? "." : Name).X);
-        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(0, 0));
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
-        if (ImGui.InputText($"##{Offset}", ref Name, 2048))
+        if (ImGuiExt.InputText($"NameEdit##{Offset}", ref Name, ref changed))
         {
-            Name = Name.Trim();
+            Name = changed.Trim();
         }
-        ImGui.PopStyleColor();
-        ImGui.PopStyleVar(2);
         ImGui.PopStyleColor();
         ImGui.SameLine();
         ImGuiExt.PushTextStyleColor(Config.Styles.ValueColor);
-        ImGui.Text($"[{(_displaySizeAsHex ? $"0x{Size:X}" : Size)}]");
+        var sizeChanged = 0;
+        if (ImGuiExt.InputInt($"SizeEdit##{Offset}", ref Size, ref sizeChanged, _displaySizeAsHex))
+        {
+            Size = sizeChanged;
+        }
         ImGui.PopStyleColor();
         if (ImGui.IsItemHovered() && ImGui.IsMouseReleased(ImGuiMouseButton.Right))
         {
@@ -140,7 +178,7 @@ public class ClassView(nint offset) : ICloneable
 
     private string GetMemoryOffsetString(nint offset)
     {
-        return (Offset + offset).ToString("X").PadLeft(nint.Size * 2, '0');
+        return (_offset + offset).ToString("X").PadLeft(nint.Size * 2, '0');
     }
 
     private string GetOffsetString(int offset, int maxOffset)

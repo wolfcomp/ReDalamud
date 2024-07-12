@@ -19,7 +19,7 @@ public class Program
         if(process != nint.Zero)
         {
             Console.WriteLine("Opened process successfully");
-            StaticClassView.CurrentClassView = new ClassView(MemoryRead.GetOpenedProcessAddress());
+            StaticClassView.CurrentClassView = new ClassView(MemoryRead.GetOpenedProcessAddress().ToString("X"));
         }
         else
         {
