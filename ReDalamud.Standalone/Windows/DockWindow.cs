@@ -1,13 +1,15 @@
-﻿using ImGuiNET;
+﻿using ReDalamud.Standalone.Utils;
 
-namespace ReDalamud.Standalone;
+namespace ReDalamud.Standalone.Windows;
 
 public class DockWindow
 {
+    public static bool IsFirstSetup = true;
     public static bool Fullscreen = true;
     public static bool Padding = false;
     public static ImGuiDockNodeFlags Flags = ImGuiDockNodeFlags.None;
     public static uint? DockSpaceId;
+    public static uint? MainDockSpaceId;
 
     public static unsafe void Draw()
     {
@@ -46,9 +48,9 @@ public class DockWindow
         {
             DockSpaceId = ImGui.GetID("DockSpace");
             ImGui.DockSpace(DockSpaceId.Value, new System.Numerics.Vector2(0, 0), Flags);
-            if (Program.IsFirstSetup)
+            if (IsFirstSetup)
             {
-                Program.IsFirstSetup = false;
+                IsFirstSetup = false;
                 
                 ImGui.Begin("ToolBar");
                 ImGui.End();
@@ -75,6 +77,7 @@ public class DockWindow
                 ImGuiExt.DockBuilderDockWindow("ClassList", classListId);
                 ImGuiExt.DockBuilderDockWindow("EnumList", enumListId);
                 ImGuiExt.DockBuilderDockWindow("StaticClassView", classViewAreaId);
+                MainDockSpaceId = classViewAreaId;
                 ImGuiExt.igDockBuilderFinish(DockSpaceId.Value);
             }
         }

@@ -1,10 +1,9 @@
-﻿using ImGuiNET;
-using SDL2;
-
-namespace ReDalamud.Standalone;
+﻿namespace ReDalamud.Standalone.Windows;
 
 public class MainMenuBar
 {
+    public static bool StyleWindowOpened;
+    
     public static void Draw()
     {
         if (ImGui.BeginMainMenuBar())
@@ -14,11 +13,11 @@ public class MainMenuBar
             {
                 if(ImGui.MenuItem("Exit"))
                 {
-                    var quitEvent = new SDL.SDL_Event
+                    var quitEvent = new SDL_Event
                     {
-                        type = SDL.SDL_EventType.SDL_QUIT
+                        type = SDL_EventType.SDL_QUIT
                     };
-                    SDL.SDL_PushEvent(ref quitEvent);
+                    SDL_PushEvent(ref quitEvent);
                 }
 
                 if (ImGui.MenuItem("Open", "Ctrl+O"))
@@ -38,6 +37,10 @@ public class MainMenuBar
                 if (ImGui.MenuItem("Docking", "", io.ConfigFlags.HasFlag(ImGuiConfigFlags.DockingEnable)))
                 {
                     io.ConfigFlags ^= ImGuiConfigFlags.DockingEnable;
+                }
+                if (ImGui.MenuItem("Style", "", StyleWindowOpened))
+                {
+                    StyleWindowOpened = !StyleWindowOpened;
                 }
                 ImGui.EndMenu();
             }

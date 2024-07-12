@@ -1,6 +1,5 @@
 #version 330
 
-precision mediump float;
 uniform sampler2D Texture;
 in vec2 Frag_UV;
 in vec4 Frag_Color;

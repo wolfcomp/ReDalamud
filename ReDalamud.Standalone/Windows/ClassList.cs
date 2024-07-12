@@ -1,13 +1,10 @@
-﻿using ImGuiNET;
-
-namespace ReDalamud.Standalone;
+﻿namespace ReDalamud.Standalone.Windows;
 
 public class ClassList
 {
     public static void Draw()
     {
         ImGui.Begin("ClassList");
-        ImGui.Text("testing");
         ImGui.End();
     }
 }

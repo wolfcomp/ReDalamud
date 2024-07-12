@@ -1,6 +1,4 @@
-﻿using System.Numerics;
-
-namespace ReDalamud.Standalone.Shaders;
+﻿namespace ReDalamud.Standalone.Shaders;
 
 public enum ParamType
 {

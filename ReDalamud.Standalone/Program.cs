@@ -1,43 +1,40 @@
-﻿using System.Reflection;
-using ImGuiNET;
-using ReDalamud.Standalone.Resources;
-using SDL2;
-
-namespace ReDalamud.Standalone;
+﻿namespace ReDalamud.Standalone;
 
 public class Program
 {
     private static ImGuiRenderer _renderer = null!;
-    public static bool IsFirstSetup = true;
-
+    public static Random Rand = new();
     public static void Main(string[] args)
     {
         var loc = Directory.GetCurrentDirectory();
         var file = Path.Combine(loc, "imgui.ini");
-        IsFirstSetup = !File.Exists(file);
+        DockWindow.IsFirstSetup = !File.Exists(file);
 
         _renderer = ImGuiRenderer.CreateWindowAndGlContext("ReDalamud.Standalone", 800, 600);
 
         var quit = false;
 
+        var process = MemoryRead.OpenProcess("ffxiv_dx11");
+
+        if(process != nint.Zero)
+        {
+            Console.WriteLine("Opened process successfully");
+            StaticClassView.CurrentClassView = new ClassView(MemoryRead.GetOpenedProcessAddress());
+        }
+        else
+        {
+            Console.WriteLine("Failed to open process");
+        }
+
         while (!quit)
         {
-            while(SDL.SDL_PollEvent(out var e) != 0)
+            while(SDL_PollEvent(out var e) != 0)
             {
                 _renderer.ProcessEvent(e);
                 switch(e.type)
                 {
-                    case SDL.SDL_EventType.SDL_QUIT:
+                    case SDL_EventType.SDL_QUIT:
                         quit = true;
-                        break;
-                    case SDL.SDL_EventType.SDL_KEYDOWN:
-                        switch (e.key.keysym.sym)
-                        {
-                            case SDL.SDL_Keycode.SDLK_ESCAPE:
-                                quit = true;
-                                break;
-                        }
-
                         break;
                 }
             }
@@ -50,13 +47,15 @@ public class Program
             ClassList.Draw();
             EnumList.Draw();
             StaticClassView.Draw();
+            StyleWindow.Draw();
             _renderer.Render();
-            SDL.SDL_GL_SwapWindow(_renderer.Window);
+            SDL_GL_SwapWindow(_renderer.Window);
         }
 
-        SDL.SDL_GL_DeleteContext(_renderer.GlContext);
-        SDL.SDL_DestroyWindow(_renderer.Window);
-        SDL.SDL_Quit();
+        SDL_GL_DeleteContext(_renderer.GlContext);
+        SDL_DestroyWindow(_renderer.Window);
+        SDL_Quit();
         IconLoader.Dispose();
+        MemoryRead.Dispose();
     }
 }

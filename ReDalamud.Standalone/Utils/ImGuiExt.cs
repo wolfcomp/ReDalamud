@@ -1,10 +1,8 @@
-﻿using System.Numerics;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using FFXIVClientStructs.Interop;
-using ImGuiNET;
 using System.Text;
 
-namespace ReDalamud.Standalone;
+namespace ReDalamud.Standalone.Utils;
 
 public enum ImGuiDockNodeState
 {
@@ -95,5 +93,10 @@ public static class ImGuiExt
         {
             igDockBuilderDockWindow(p, nodeId);
         }
+    }
+
+    public static void PushTextStyleColor(Color color)
+    {
+        ImGui.PushStyleColor(ImGuiCol.Text, (Vector4)color);
     }
 }

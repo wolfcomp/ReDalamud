@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace ReDalamud.Standalone;
+namespace ReDalamud.Standalone.Utils;
 
 public static class Util
 {
