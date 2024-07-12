@@ -38,11 +38,10 @@ public static class ObjectExtensions
         return _toIniStringMethods.TryGetValue(type, out var method) ? method(obj) : obj.ToString()!;
     }
 
-    public static object FromIniString(this object obj, string str)
+    public static object FromIniString(this Type type, string str)
     {
-        var type = obj.GetType();
         if (_fromIniStringMethods.Count == 0)
             LoadAllMethods();
-        return _fromIniStringMethods.TryGetValue(type, out var method) ? method(obj, str) : obj;
+        return _fromIniStringMethods.TryGetValue(type, out var method) ? method(type, str) : str;
     }
 }

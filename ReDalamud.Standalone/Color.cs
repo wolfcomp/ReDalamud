@@ -1,6 +1,9 @@
-﻿using System.Globalization;
+﻿using System.ComponentModel;
+using System.Globalization;
 
 namespace ReDalamud.Standalone;
+
+[TypeConverter(typeof(ColorConverter))]
 public class Color
 {
     public Vector4 InternalValue;
@@ -58,4 +61,15 @@ public class Color
     public static implicit operator Color(uint color) => FromRGBAFloat((color >> 24 & 0xFF) / 255f, (color >> 16 & 0xFF) / 255f, (color >> 8 & 0xFF) / 255f, (color & 0xFF) / 255f);
     public static implicit operator string(Color color) => color.ToHex(true);
     public static implicit operator Color(string color) => FromHex(color);
+}
+
+public class ColorConverter : TypeConverter
+{
+    public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => sourceType == typeof(string);
+    public override object ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) => value switch
+    {
+        string str => Color.FromHex(str),
+        _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
+    };
+    public override object ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType) => destinationType == typeof(string) && value is Color color ? color.ToHex(true) : null!;
 }

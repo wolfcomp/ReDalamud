@@ -7,8 +7,8 @@ public class Program
     public static void Main(string[] args)
     {
         var loc = Directory.GetCurrentDirectory();
-        var file = Path.Combine(loc, "imgui.ini");
-        DockWindow.IsFirstSetup = !File.Exists(file);
+        DockWindow.IsFirstSetup = !File.Exists(Path.Combine(loc, "imgui.ini"));
+        Config.Load();
 
         _renderer = ImGuiRenderer.CreateWindowAndGlContext("ReDalamud.Standalone", 800, 600);
 
@@ -47,7 +47,7 @@ public class Program
             ClassList.Draw();
             EnumList.Draw();
             StaticClassView.Draw();
-            StyleWindow.Draw();
+            ConfigWindow.Draw();
             _renderer.Render();
             SDL_GL_SwapWindow(_renderer.Window);
         }

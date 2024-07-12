@@ -186,20 +186,6 @@ public class ClassView(string offset) : ICloneable
         return offset.ToString("X").PadLeft(int.Max(maxOffset.ToString("X").Length, 4), '0');
     }
 
-    /// <summary>
-    /// Updates size with the given addition.
-    /// </summary>
-    /// <param name="add">How much to increase or decrease size by.</param>
-    public void UpdateSize(int add)
-    {
-        Size += add;
-    }
-
-    public void SetName(string name)
-    {
-        Name = name;
-    }
-
     public object Clone()
     {
         return new ClassView(Offset) { Name = Name };

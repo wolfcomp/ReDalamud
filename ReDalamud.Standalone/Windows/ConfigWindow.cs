@@ -1,12 +1,12 @@
 ﻿using ImGui = ImGuiNET.ImGui;
 
 namespace ReDalamud.Standalone.Windows;
-public class StyleWindow
+public class ConfigWindow
 {
     public static void Draw()
     {
         if(!MainMenuBar.StyleWindowOpened) return;
-        ImGui.Begin("StyleWindow", ref MainMenuBar.StyleWindowOpened, ImGuiWindowFlags.AlwaysAutoResize);
+        ImGui.Begin("ConfigWindow", ref MainMenuBar.StyleWindowOpened, ImGuiWindowFlags.AlwaysAutoResize);
 
         if (ImGui.BeginTabBar("StyleTabBar"))
         {
@@ -29,15 +29,21 @@ public class StyleWindow
                 ImGui.EndTabItem();
             }
 
-            if (ImGui.BeginTabItem("Fonts"))
-            {
-                ImGui.Text("Fonts");
-                ImGui.EndTabItem();
-            }
+            // if (ImGui.BeginTabItem("Fonts"))
+            // {
+            //     ImGui.Text("Fonts");
+            //     ImGui.EndTabItem();
+            // }
+            //
+            // if (ImGui.BeginTabItem("Style"))
+            // {
+            //     ImGui.Text("Style");
+            //     ImGui.EndTabItem();
+            // }
 
-            if (ImGui.BeginTabItem("Style"))
+            if (ImGui.BeginTabItem("Global"))
             {
-                ImGui.Text("Style");
+                ImGui.InputText("ClientStructs IDA Location", ref Config.Global.ClientStructsPath, 1000);
                 ImGui.EndTabItem();
             }
 

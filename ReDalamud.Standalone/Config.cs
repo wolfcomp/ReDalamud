@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.ComponentModel;
+using System.Text;
 
 namespace ReDalamud.Standalone;
 public static class Config
@@ -11,8 +12,7 @@ public static class Config
         // Save the config in an ini file
         var sb = new StringBuilder();
         Save(typeof(Styles), Styles, sb);
-
-        sb.AppendLine();
+        Save(typeof(Global), Global, sb);
         File.WriteAllText("config.ini", sb.ToString());
     }
 
@@ -24,21 +24,25 @@ public static class Config
         {
             if (types.Add(field.FieldType))
             {
-                sb.AppendLine($"{field.FieldType.GetDocString()}");
+                var doc = field.FieldType.GetDocString();
+                if(!string.IsNullOrWhiteSpace(doc))
+                    sb.AppendLine($"{doc}");
             }
             var value = field.GetValue(obj);
             if (value == null)
                 continue;
             sb.AppendLine($"{field.Name}={value.ToIniString()}");
         }
+
+        sb.AppendLine();
     }
 
     public static void Load()
     {
+        if (!File.Exists("config.ini"))
+            return;
         // Load the config from an ini file
-        var lines = new List<string>();
-        if (File.Exists("config.ini"))
-            lines = File.ReadAllLines("config.ini").ToList();
+        var lines = File.ReadAllLines("config.ini").ToList();
 
         var styles = new Styles();
         var grouped = new Dictionary<string, List<(string Key, string Value)>>();
@@ -50,7 +54,7 @@ public static class Config
                 currentGroup = line.Trim('[', ']');
                 grouped[currentGroup] = new List<(string Key, string Value)>();
             }
-            else if (!string.IsNullOrWhiteSpace(line))
+            else if (!string.IsNullOrWhiteSpace(line) && !line.StartsWith('#'))
             {
                 var split = line.Split('=');
                 grouped[currentGroup].Add((split[0], split[1]));
@@ -58,20 +62,29 @@ public static class Config
         }
 
         grouped.TryGetValue("Styles", out var styleLines);
-        var styleType = typeof(Styles);
         if (styleLines != null)
             foreach (var (key, value) in styleLines)
-                Load(styleType, key, value);
+                Load(Styles, key, value);
+        grouped.TryGetValue("Global", out var globalLines);
+        if (globalLines != null)
+            foreach (var (key, value) in globalLines)
+                Load(Global, key, value);
     }
 
-    private static void Load(Type type, string key, string value)
+    private static void Load(object obj, string key, string value)
     {
-        var field = type.GetField(key);
+        var field = obj.GetType().GetField(key);
         if (field == null)
             return;
-        var parsed = field.FieldType.GetMethod("FromIniString")?.Invoke(null, [value]);
-        if (parsed != null)
-            field.SetValue(null, parsed);
+        var val = field.FieldType.FromIniString(value);
+        try
+        {
+            field.SetValue(obj, Convert.ChangeType(val, field.FieldType));
+        }
+        catch
+        {
+            field.SetValue(obj, TypeDescriptor.GetConverter(field.FieldType).ConvertFromString(null, null, value));
+        }
     }
 }
 
@@ -95,5 +108,6 @@ public class Styles
 
 public class Global
 {
-    public bool IsLittleEndian = BitConverter.IsLittleEndian;
+    // public bool IsLittleEndian = BitConverter.IsLittleEndian;
+    public string ClientStructsPath = "";
 }
