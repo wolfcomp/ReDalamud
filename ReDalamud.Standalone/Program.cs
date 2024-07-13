@@ -1,8 +1,11 @@
-﻿namespace ReDalamud.Standalone;
+﻿using ReDalamud.Standalone.Types;
+
+namespace ReDalamud.Standalone;
 
 public class Program
 {
     private static ImGuiRenderer _renderer = null!;
+    private static Timer? _timer;
     public static Random Rand = new();
     public static void Main(string[] args)
     {
@@ -19,7 +22,8 @@ public class Program
         if(process != nint.Zero)
         {
             Console.WriteLine("Opened process successfully");
-            StaticClassView.CurrentClassView = new ClassView(MemoryRead.GetOpenedProcessAddress().ToString("X"));
+            StaticClassView.CurrentClassView = new ClassRenderer(MemoryRead.GetOpenedProcessAddress());
+            _timer = new Timer(_ => MemoryRead.ScanAllProcessMemoryRegions(), null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
         }
         else
         {
@@ -55,6 +59,7 @@ public class Program
         SDL_GL_DeleteContext(_renderer.GlContext);
         SDL_DestroyWindow(_renderer.Window);
         SDL_Quit();
+        _timer?.Dispose();
         IconLoader.Dispose();
         MemoryRead.Dispose();
     }

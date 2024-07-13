@@ -1,13 +1,15 @@
-﻿namespace ReDalamud.Standalone.Windows;
+﻿using ReDalamud.Standalone.Types;
+
+namespace ReDalamud.Standalone.Windows;
 internal class StaticClassView
 {
-    public static ClassView? CurrentClassView;
+    public static ClassRenderer? CurrentClassView;
 
     public static void Draw()
     {
         ImGui.PushStyleColor(ImGuiCol.WindowBg, (Vector4)Config.Styles.BackgroundColor);
         ImGui.Begin("StaticClassView");
-        CurrentClassView?.Draw(true);
+        CurrentClassView?.DrawMemory(nint.Zero);
         ImGui.End();
         ImGui.PopStyleColor();
     }

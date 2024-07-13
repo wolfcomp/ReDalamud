@@ -1,6 +1,4 @@
-﻿using ReDalamud.Standalone.Utils;
-
-namespace ReDalamud.Standalone.Windows;
+﻿namespace ReDalamud.Standalone.Windows;
 
 public class DockWindow
 {

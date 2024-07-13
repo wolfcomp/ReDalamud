@@ -100,12 +100,13 @@ public static class ImGuiExt
         ImGui.PushStyleColor(ImGuiCol.Text, (Vector4)color);
     }
 
-    public static bool InputText(string label, ref string text, ref string changed)
+    public static bool InputText(string label, string text, ref string changed)
     {
         if (!EditTexts.TryGetValue(label, out var edit))
         {
             edit = EditTexts[label] = new EditText(text);
         }
+        edit.UpdateText(text);
         return edit.Draw(ref changed);
     }
 
@@ -126,6 +127,12 @@ public static class ImGuiExt
         public bool Editing;
         private string _text = text;
         private string _buffer = text;
+
+        public void UpdateText(string text)
+        {
+            _text = text;
+            _buffer = text;
+        }
 
         public bool Draw(ref string buffer)
         {
@@ -207,9 +214,9 @@ public static class ImGuiExt
                 if (Editing)
                 {
                     ImGui.SetKeyboardFocusHere(-1);
-                    if(ImGui.IsKeyReleased(ImGuiKey.UpArrow))
+                    if (ImGui.IsKeyReleased(ImGuiKey.UpArrow))
                         _buffer += 1;
-                    if(ImGui.IsKeyReleased(ImGuiKey.DownArrow))
+                    if (ImGui.IsKeyReleased(ImGuiKey.DownArrow))
                         _buffer -= 1;
                 }
                 ImGui.PopStyleVar(2);

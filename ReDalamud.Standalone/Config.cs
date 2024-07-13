@@ -110,4 +110,5 @@ public class Global
 {
     // public bool IsLittleEndian = BitConverter.IsLittleEndian;
     public string ClientStructsPath = "";
+    public bool DisplayAsHex = false;
 }

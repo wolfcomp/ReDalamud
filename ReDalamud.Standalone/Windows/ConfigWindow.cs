@@ -44,6 +44,10 @@ public class ConfigWindow
             if (ImGui.BeginTabItem("Global"))
             {
                 ImGui.InputText("ClientStructs IDA Location", ref Config.Global.ClientStructsPath, 1000);
+                if (ImGui.RadioButton("Size as Hex", Config.Global.DisplayAsHex))
+                {
+                    Config.Global.DisplayAsHex = !Config.Global.DisplayAsHex;
+                }
                 ImGui.EndTabItem();
             }
 

@@ -1,13 +1,12 @@
 ﻿using System.Runtime.InteropServices;
 using ReDalamud.Standalone.Shaders;
-using ReDalamud.Standalone.Utils;
 
 namespace ReDalamud.Standalone;
 
 public partial class ImGuiRenderer
 {
-    public readonly nint Window;
-    public readonly nint GlContext;
+    public nint Window { get; private set; }
+    public nint GlContext { get; private set; }
     public GLShaderProgram ShaderProgram { get; private set; }
     private readonly uint _vboHandle;
     private readonly uint _elmHandle;

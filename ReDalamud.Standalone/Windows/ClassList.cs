@@ -1,24 +1,27 @@
-﻿using System.Reflection;
+﻿using ReDalamud.Standalone.Types;
+using System.Reflection;
 
 namespace ReDalamud.Standalone.Windows;
 
 public class ClassList
 {
-    static List<Type> _loadedFfxivClientStructTypes = GetLoadedFFXIVClientStructTypes();
+    // ReSharper disable once FieldCanBeMadeReadOnly.Local
+    private static List<ClassRenderer> _loadedFfxivClientStructTypes = GetLoadedFFXIVClientStructTypes();
 
     public static void Draw()
     {
         ImGui.Begin("ClassList");
-        _loadedFfxivClientStructTypes.ForEach(type =>
+        _loadedFfxivClientStructTypes.ForEach(renderer =>
         {
-            if (ImGui.Selectable(type.Name))
+            if (renderer.DrawName(StaticClassView.CurrentClassView == renderer))
             {
+                StaticClassView.CurrentClassView = renderer;
             }
         });
         ImGui.End();
     }
 
-    public static List<Type> GetLoadedFFXIVClientStructTypes()
+    public static List<ClassRenderer> GetLoadedFFXIVClientStructTypes()
     {
         var types = new List<Type>();
         var assemblies = AppDomain.CurrentDomain.GetAssemblies();
@@ -29,13 +32,16 @@ public class ClassList
             foreach (var type in assembly.GetTypes())
             {
                 var nm = type.Namespace?.Split('.') ?? [];
-                if (nm.Length > 1 && nm[0] == "FFXIVClientStructs" && nm[1] is "FFXIV" or "Havok" or "STD" && type is { IsValueType: true, IsPrimitive: false, IsEnum: false } && !type.Name.Contains("VirtualTable") && !type.Name.Contains("e__FixedBuffer"))
+                if (nm.Length > 1 && nm[0] == "FFXIVClientStructs" && nm[1] is "FFXIV" && type is { IsValueType: true, IsPrimitive: false, IsEnum: false } && !type.Name.Contains("VirtualTable") && !type.Name.Contains("e__FixedBuffer"))
                 {
                     types.Add(type);
                 }
             }
         }
 
-        return types;
+        return types.Select(t => new ClassRenderer
+        {
+            Name = t.Namespace![25..].Replace(".", "::") + "::" + t.Name,
+        }).OrderBy(t => t.Name).ToList();
     }
 }

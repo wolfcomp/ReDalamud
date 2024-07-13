@@ -1,5 +1,4 @@
-﻿using static SDL2.SDL;
-using static ReDalamud.Standalone.GL;
+﻿using static ReDalamud.Standalone.GL;
 
 namespace ReDalamud.Standalone;
 
