@@ -8,16 +8,28 @@ public class ClassList
     // ReSharper disable once FieldCanBeMadeReadOnly.Local
     private static List<ClassRenderer> _loadedFfxivClientStructTypes = GetLoadedFFXIVClientStructTypes();
 
-    public static void Draw()
+    public static unsafe void Draw()
     {
         ImGui.Begin("ClassList");
-        _loadedFfxivClientStructTypes.ForEach(renderer =>
+        ImGuiListClipperPtr clipper = new(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
+        clipper.Begin(_loadedFfxivClientStructTypes.Count, ImGui.GetTextLineHeightWithSpacing());
+        while (clipper.Step())
         {
-            if (renderer.DrawName(StaticClassView.CurrentClassView == renderer))
+            for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
             {
-                StaticClassView.CurrentClassView = renderer;
+                if (i >= _loadedFfxivClientStructTypes.Count)
+                    break;
+                if (i < 0)
+                    continue;
+                var type = _loadedFfxivClientStructTypes[i];
+                if (type.DrawName(StaticClassView.CurrentClassView == type))
+                {
+                    StaticClassView.CurrentClassView = type;
+                }
             }
-        });
+        }
+        clipper.End();
+        clipper.Destroy();
         ImGui.End();
     }
 
