@@ -24,10 +24,28 @@ public class Program
             Console.WriteLine("Opened process successfully");
             StaticClassView.CurrentClassView = new ClassRenderer(MemoryRead.GetOpenedProcessAddress());
             _timer = new Timer(_ => MemoryRead.ScanAllProcessMemoryRegions(), null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
+            Task.Run(ClassList.InitTypes);
         }
         else
         {
             Console.WriteLine("Failed to open process");
+        }
+
+        var imGuiCols = Enum.GetValues<ImGuiCol>().Where(t => t != ImGuiCol.COUNT).ToList();
+        var imGuiStyleVars = Enum.GetValues<ImGuiStyleVar>().Where(t => t != ImGuiStyleVar.COUNT).ToList();
+        foreach (var imGuiCol in imGuiCols)
+        {
+            unsafe
+            {
+                var col = ImGui.GetStyleColorVec4(imGuiCol);
+                ImGuiSmrt.Color.Stack.Add((imGuiCol, *col));
+            }
+        }
+
+        foreach (var imGuiStyleVar in imGuiStyleVars)
+        {
+            var vec = ImGuiExt.GetStyleObject(imGuiStyleVar);
+            ImGuiSmrt.Style.Stack.Add((imGuiStyleVar, vec));
         }
 
         while (!quit)

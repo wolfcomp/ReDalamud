@@ -11,13 +11,14 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
     public string Name = GenerateRandomName();
     public string OffsetText = "140000000";
     private string SizeString => Config.Global.DisplayAsHex ? "0x" + Size.ToString("X") : Size.ToString();
+    private float _height = -1;
 
     public ClassRenderer()
     {
         Address = MemoryRead.OpenedProcess.MainModule!.BaseAddress;
         OffsetText = Address.ToString("X");
         // Maybe make the default size configurable?
-        for (var i = 0; i < 0x40; i+=8)
+        for (var i = 0; i < 0x40; i += 8)
         {
             Renderers.Add(i, new Unknown8Renderer());
         }
@@ -51,33 +52,53 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         if (IsCollapsed)
             return;
 
+        var minWindow = ImGui.GetWindowContentRegionMin();
+        var maxWindow = ImGui.GetWindowContentRegionMax();
+        var scrollY = ImGui.GetScrollY();
+        var windowHeight = maxWindow.Y - minWindow.Y;
+        ImGui.BeginChild($"ClassRendererMemory##{Name}{address}", new Vector2(-1, GetHeight()));
         ImGui.Indent();
+        var posY = 0f;
         foreach (var (offset, renderer) in Renderers)
         {
+            if (!isVisible(posY))
+            {
+                posY += renderer.GetHeight();
+                continue;
+            }
             ImGuiExt.PushTextStyleColor(Config.Styles.OffsetColor);
             ImGui.Text($"{offset:X4}");
             ImGui.PopStyleColor();
             ImGui.SameLine();
             renderer.DrawMemory(address + offset);
+            posY += renderer.GetHeight();
         }
         ImGui.Unindent();
+        ImGui.EndChild();
+        return;
+
+        bool isVisible(float y)
+        {
+            return y >= scrollY && y <= windowHeight + scrollY;
+        }
     }
 
     private void DrawHeader(nint address)
     {
-        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(0, 0));
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
-        ImGui.PushStyleColor(ImGuiCol.Button, (Vector4)Config.Styles.BackgroundColor);
-        if (ImGui.ImageButton($"ClassViewCollapse##{Name}{address}", IconLoader.GetIconTextureId(IsCollapsed ? Icon16.ClosedIcon : Icon16.OpenIcon), new Vector2(16)))
+        ImGui.BeginChild($"ClassHeader##{Name}{address}", new Vector2(-1, ImGui.GetTextLineHeight()));
+        var style = ImGuiSmrt.PushStyle(ImGuiStyleVar.FramePadding, new Vector2(0, 0));
+        style.Push(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
+        style.Push(ImGuiStyleVar.ItemInnerSpacing, new Vector2(0, 0));
+        var color = ImGuiSmrt.PushColor(ImGuiCol.Button, Config.Styles.BackgroundColor);
+        if (ImGui.ImageButton($"Collapse##{Name}{address}", IconLoader.GetIconTextureId(IsCollapsed ? Icon16.ClosedIcon : Icon16.OpenIcon), new Vector2(16)))
         {
             IsCollapsed = !IsCollapsed;
         }
-        ImGui.PopStyleVar(2);
-        ImGui.PopStyleColor();
         ImGui.SameLine();
         ImGui.Image(IconLoader.GetIconTextureId(Icon16.ClassType), new Vector2(16));
+        style.Dispose();
         ImGui.SameLine();
-        ImGuiExt.PushTextStyleColor(Config.Styles.AddressColor);
+        color.PushTextColor(Config.Styles.AddressColor);
         var changed = "";
         ImGui.PushItemWidth(ImGui.CalcTextSize(string.IsNullOrWhiteSpace(Name) ? "." : Name).X);
         if (ImGuiExt.InputText($"AddressEdit##{address}", OffsetText, ref changed))
@@ -87,27 +108,105 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             {
                 // TODO: Get the address from data.yml in directory of Config.Global.ClientStructsPath
             }
-            else if(nint.TryParse(OffsetText, NumberStyles.AllowHexSpecifier, null, out nint parsedAddress))
+            else if (nint.TryParse(OffsetText, NumberStyles.AllowHexSpecifier, null, out nint parsedAddress))
                 Address = parsedAddress;
             OffsetText = Address.ToString("X");
         }
-        ImGui.PopStyleColor();
         ImGui.SameLine();
-        ImGuiExt.PushTextStyleColor(Config.Styles.TypeColor);
+        color.PushTextColor(Config.Styles.TypeColor);
         ImGui.Text("Class");
-        ImGui.PopStyleColor();
         ImGui.SameLine();
-        ImGuiExt.PushTextStyleColor(Config.Styles.NameColor);
+        color.PushTextColor(Config.Styles.NameColor);
         ImGui.PushItemWidth(ImGui.CalcTextSize(string.IsNullOrWhiteSpace(Name) ? "." : Name).X);
         if (ImGuiExt.InputText($"NameEdit##{address}", Name, ref changed))
         {
             Name = changed.Trim();
         }
-        ImGui.PopStyleColor();
         ImGui.SameLine();
-        ImGuiExt.PushTextStyleColor(Config.Styles.ValueColor);
+        color.PushTextColor(Config.Styles.ValueColor);
         ImGui.TextUnformatted($"[{SizeString}]");
-        ImGui.PopStyleColor();
+        color.Dispose();
+        ImGui.EndChild();
+        if (ImGui.IsItemHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
+            ImGui.OpenPopup($"ClassPopup##{Name}{address}");
+        DrawPopUp(address);
+    }
+
+    public void DrawPopUp(nint address)
+    {
+        if (ImGui.BeginPopupContextWindow($"ClassPopup##{Name}{address}"))
+        {
+            if (ImGui.Selectable("Copy Address"))
+            {
+                ImGui.SetClipboardText(Address.ToString("X"));
+            }
+
+            if (ImGuiExt.MenuWithIcon(Icon16.ButtonAdd, "Add Bytes", $"ClassAddBytes##{Name}{address}"))
+            {
+                var last = Renderers.OrderBy(t => t.Key).Last().Key + 8;
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytes8, "Add 8 Bytes"))
+                {
+                    Renderers.Add(last, new Unknown8Renderer());
+                    _height = -1;
+                }
+
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytes64, "Add 64 Bytes"))
+                {
+                    _height = -1;
+                    for (var i = 0; i < 64; i += 8)
+                    {
+                        Renderers.Add(last + i, new Unknown8Renderer());
+                    }
+                }
+
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytes256, "Add 256 Bytes"))
+                {
+                    _height = -1;
+                    for (var i = 0; i < 256; i += 8)
+                    {
+                        Renderers.Add(last + i, new Unknown8Renderer());
+                    }
+                }
+
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytes1024, "Add 1024 Bytes"))
+                {
+                    _height = -1;
+                    for (var i = 0; i < 1024; i += 8)
+                    {
+                        Renderers.Add(last + i, new Unknown8Renderer());
+                    }
+                }
+
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytes4096, "Add 4096 Bytes"))
+                {
+                    _height = -1;
+                    for (var i = 0; i < 4096; i += 8)
+                    {
+                        Renderers.Add(last + i, new Unknown8Renderer());
+                    }
+                }
+
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytesX, "Add Enough Bytes"))
+                {
+                    _height = -1;
+                    for (var i = 0; i < 0x800000; i += 8)
+                    {
+                        Renderers.Add(last + i, new Unknown8Renderer());
+                    }
+                }
+
+                ImGui.EndMenu();
+            }
+            ImGui.EndPopup();
+        }
+    }
+
+    public float GetHeight()
+    {
+        if (_height > 0)
+            return _height;
+        var height = ImGui.GetTextLineHeightWithSpacing();
+        return _height = height + Renderers.Sum(t => t.Value.GetHeight());
     }
 
     public void DrawCSharpCode()

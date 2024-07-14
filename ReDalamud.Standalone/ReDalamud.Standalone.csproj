@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFramework>net8.0-windows10.0.17763.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -288,26 +288,33 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\FFXIVClientStructs\FFXIVClientStructs\FFXIVClientStructs.csproj" />
+		<ProjectReference
+			Include="..\FFXIVClientStructs\FFXIVClientStructs\FFXIVClientStructs.csproj" />
 		<ProjectReference Include="..\SDL2-CS\SDL2-CS.Core.csproj" />
 	</ItemGroup>
 
-	<Target Name="DownloadSDL2IfNotExist" BeforeTargets="AfterBuild" Condition="!Exists('$(OutputPath)\SDL2.dll')">
-		<DownloadFile SourceUrl="https://github.com/libsdl-org/SDL/releases/download/release-2.30.5/SDL2-2.30.5-win32-x64.zip" DestinationFolder="$(OutputPath)" DestinationFileName="SDL2.zip">
+	<Target Name="DownloadSDL2IfNotExist" BeforeTargets="AfterBuild"
+		Condition="!Exists('$(OutputPath)\SDL2.dll')">
+		<DownloadFile
+			SourceUrl="https://github.com/libsdl-org/SDL/releases/download/release-2.30.5/SDL2-2.30.5-win32-x64.zip"
+			DestinationFolder="$(OutputPath)" DestinationFileName="SDL2.zip">
 		</DownloadFile>
-		<DownloadFile SourceUrl="https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.2/SDL2_image-2.8.2-win32-x64.zip" DestinationFolder="$(OutputPath)" DestinationFileName="SDL2_img.zip">
+		<DownloadFile
+			SourceUrl="https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.2/SDL2_image-2.8.2-win32-x64.zip"
+			DestinationFolder="$(OutputPath)" DestinationFileName="SDL2_img.zip">
 		</DownloadFile>
-		<Unzip SourceFiles="$(OutputPath)\SDL2.zip;$(OutputPath)\SDL2_img.zip" DestinationFolder="$(OutputPath)" OverwriteReadonlyFiles="true">
+		<Unzip SourceFiles="$(OutputPath)\SDL2.zip;$(OutputPath)\SDL2_img.zip"
+			DestinationFolder="$(OutputPath)" OverwriteReadonlyFiles="true">
 		</Unzip>
 		<Delete Files="$(OutputPath)\SDL2.zip;$(OutputPath)\SDL2_img.zip" />
 	</Target>
 
 	<ItemGroup>
-	  <EditorConfigFiles Remove="D:\source\repos\ReDalamud\ReDalamud.Standalone\.editorconfig" />
+		<EditorConfigFiles Remove="D:\source\repos\ReDalamud\ReDalamud.Standalone\.editorconfig" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Include="D:\source\repos\ReDalamud\ReDalamud.Standalone\.editorconfig" />
+		<None Include="D:\source\repos\ReDalamud\ReDalamud.Standalone\.editorconfig" />
 	</ItemGroup>
 
 </Project>

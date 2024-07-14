@@ -6,11 +6,26 @@ namespace ReDalamud.Standalone.Windows;
 public class ClassList
 {
     // ReSharper disable once FieldCanBeMadeReadOnly.Local
-    private static List<ClassRenderer> _loadedFfxivClientStructTypes = GetLoadedFFXIVClientStructTypes();
+    private static List<ClassRenderer> _loadedFfxivClientStructTypes = [];
+    private static bool _processingXivTypes = true;
+    private static float _spinner = 0;
+
+    public static void InitTypes()
+    {
+        _loadedFfxivClientStructTypes = GetLoadedFFXIVClientStructTypes();
+        _processingXivTypes = false;
+    }
 
     public static unsafe void Draw()
     {
         ImGui.Begin("ClassList");
+        if(_processingXivTypes)
+        {
+            ImGui.Text("Processing FFXIV Types...");
+            ImGuiExt.SpinnerDots("ClasListSpinner", ref _spinner, 16, 4, Color.FromRGBFloat(1,1,1));
+            ImGui.End();
+            return;
+        }
         ImGuiListClipperPtr clipper = new(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
         clipper.Begin(_loadedFfxivClientStructTypes.Count, ImGui.GetTextLineHeightWithSpacing());
         while (clipper.Step())

@@ -5,4 +5,5 @@ public interface IRenderer
     int Size { get; }
     void DrawMemory(nint address);
     void DrawCSharpCode();
+    float GetHeight();
 }

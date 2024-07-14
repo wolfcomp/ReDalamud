@@ -10,6 +10,8 @@ public unsafe partial class MemoryRead
     public static Process OpenedProcess;
     public static string ProcessName;
     public static List<SectionContainer> MemoryRegions = new();
+    public static List<(nint AddresStart, nint AddresEnd, int Index)> MemoryRegionsIndex = new();
+    public static Dictionary<nint, int> MemoryRegionsIndexMap = new();
 
     [DllImport("kernel32.dll")]
     public static extern nint OpenProcess(uint dwDesiredAccess, bool bInheritHandle, int dwProcessId);
@@ -31,9 +33,22 @@ public unsafe partial class MemoryRead
         return result;
     }
 
+    public static int GetMemoryRegionIndex(nint address)
+    {
+        for (var i = 0; i < MemoryRegionsIndex.Count; i++)
+            if (address >= MemoryRegionsIndex[i].AddresStart && address < MemoryRegionsIndex[i].AddresEnd)
+                return i;
+        
+        return -1;
+    }
+
     public static string IsInRegion(nint address)
     {
-        var i = MemoryRegions.FindIndex(region => address >= region.BaseAddress && address < region.BaseAddress + region.Size);
+        if (!MemoryRegionsIndexMap.TryGetValue(address, out var i))
+        {
+            i = GetMemoryRegionIndex(address);
+            MemoryRegionsIndexMap.Add(address, i);
+        }
         return i == -1 ? "" : !string.IsNullOrWhiteSpace(MemoryRegions[i].Name) ? MemoryRegions[i].Name : MemoryRegions[i].Category.ToString();
     }
 
@@ -74,6 +89,12 @@ public unsafe partial class MemoryRead
         }
 
         MapSectionContainers();
+
+        MemoryRegionsIndex.Clear();
+        for (var i = 0; i < MemoryRegions.Count; i++)
+        {
+            MemoryRegionsIndex.Add((MemoryRegions[i].BaseAddress, MemoryRegions[i].BaseAddress + MemoryRegions[i].Size, i));
+        }
     }
 
     public static void MapSectionContainers()
@@ -111,7 +132,7 @@ public unsafe partial class MemoryRead
                 section.Name = Encoding.UTF8.GetString(p, len);
             if ((header.Characteristics & 0x20) == 0x20) section.Category = SectionCategory.Code;
             else if ((header.Characteristics & 0xC0) != 0) section.Category = SectionCategory.Data;
-            if(sectionIndex == -1)
+            if (sectionIndex == -1)
                 MemoryRegions.Add(section);
             else
                 MemoryRegions[sectionIndex] = section;

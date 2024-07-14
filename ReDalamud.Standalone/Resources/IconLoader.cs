@@ -150,6 +150,9 @@ public class IconLoader
 
     private static Dictionary<uint, (IconType Type, uint IconId, nint Handle)> _textureDictionary = new();
 
+    private static bool IsUpperOrNumber(char c) => char.IsUpper(c) || char.IsNumber(c);
+    private static bool IsCurrentAndNotLastUpperOrNumber(string s, int i) => IsUpperOrNumber(s[i]) && !(i > 0 && IsUpperOrNumber(s[i - 1]));
+
     public static byte[]? GetIconBytes(Icon16 icon)
     {
         var str = icon.ToString();
@@ -164,7 +167,7 @@ public class IconLoader
             default:
                 for (var i = 1; i < str.Length; i++)
                 {
-                    if (!char.IsUpper(str[i]) && !char.IsNumber(str[i])) continue;
+                    if (!IsCurrentAndNotLastUpperOrNumber(str, i)) continue;
                     str = str.Insert(i, "_");
                     i++;
                 }
