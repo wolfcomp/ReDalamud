@@ -10,7 +10,7 @@ internal class StaticClassView
         ImGui.PushStyleColor(ImGuiCol.WindowBg, (Vector4)Config.Styles.BackgroundColor);
         ImGui.Begin("StaticClassView", ImGuiWindowFlags.AlwaysVerticalScrollbar);
         ImGui.PopStyleColor();
-        CurrentClassView?.DrawMemory(nint.Zero);
+        CurrentClassView?.DrawMemory(nint.Zero, 0);
         ImGui.End();
     }
 }

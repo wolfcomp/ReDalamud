@@ -4,14 +4,17 @@ namespace ReDalamud.Standalone.Types;
 public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
 {
     public bool HasCode => true;
-    public int Size => Renderers.OrderBy(t => t.Key).Last().Key; // start with 64 bytes for now this will be able to be changed later *need to actually code it*
-    public Dictionary<int, IRenderer> Renderers = new();
-    public bool IsCollapsed = false;
+    public int Size => Renderers.Sum(t => t.Size);
+    public List<IRenderer> Renderers = new();
+    public bool IsCollapsed;
     public nint Address = (nint)0x140000000;
     public string Name = GenerateRandomName();
     public string OffsetText = "140000000";
     private string SizeString => Config.Global.DisplayAsHex ? "0x" + Size.ToString("X") : Size.ToString();
     private float _height = -1;
+    private bool _addingCustomBytes;
+    private int _addingCustomBytesSize;
+    private int _selectedIndex = -1;
 
     public ClassRenderer()
     {
@@ -20,7 +23,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         // Maybe make the default size configurable?
         for (var i = 0; i < 0x40; i += 8)
         {
-            Renderers.Add(i, new Unknown8Renderer());
+            Renderers.Add(new Unknown8Renderer());
         }
     }
 
@@ -44,7 +47,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         return selected;
     }
 
-    public void DrawMemory(nint address)
+    public void DrawMemory(nint address, int offset)
     {
         if (address == nint.Zero)
             address = Address;
@@ -57,23 +60,42 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         var scrollY = ImGui.GetScrollY();
         var windowHeight = maxWindow.Y - minWindow.Y;
         ImGui.BeginChild($"ClassRendererMemory##{Name}{address}", new Vector2(-1, GetHeight()));
-        ImGui.Indent();
         var posY = 0f;
-        foreach (var (offset, renderer) in Renderers)
+        offset = 0;
+        var childSize = new Vector2(-1, ImGui.GetTextLineHeight());
+        for (var index = 0; index < Renderers.Count; index++)
         {
             //if (!isVisible(posY))
             //{
             //    posY += renderer.GetHeight();
             //    continue;
             //}
-            ImGuiExt.PushTextStyleColor(Config.Styles.OffsetColor);
-            ImGui.Text($"{offset:X4}");
-            ImGui.PopStyleColor();
-            ImGui.SameLine();
-            renderer.DrawMemory(address + offset);
+            var renderer = Renderers[index];
+            if(index == _selectedIndex)
+                ImGui.PushStyleColor(ImGuiCol.ChildBg, (Vector4)Config.Styles.SelectedColor);
+            //using var padding = ImGuiSmrt.PushStyle(ImGuiStyleVar.WindowPadding, Vector2.Zero);
+            //padding.Push(ImGuiStyleVar.FramePadding, Vector2.Zero);
+            //padding.Push(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
+            //padding.Push(ImGuiStyleVar.ItemInnerSpacing, Vector2.Zero);
+            ImGui.BeginChild($"ClassRendererRow###{Name}{address}{index}", childSize, false, ImGuiWindowFlags.NoScrollbar);
+            renderer.DrawMemory(address + offset, offset);
+            ImGui.EndChild();
+            var pos = ImGui.GetCursorPos();
+            if(index == _selectedIndex)
+                ImGui.PopStyleColor();
+            if(ImGui.IsItemHovered())
+            {
+                if (ImGui.IsMouseClicked(ImGuiMouseButton.Left)) _selectedIndex = index;
+                if (ImGui.IsMouseClicked(ImGuiMouseButton.Right))
+                {
+                    _selectedIndex = index;
+                    ImGui.OpenPopup($"ClassPopup##{Name}{address}{index}");
+                }
+            }
+
             posY += renderer.GetHeight();
+            offset += renderer.Size;
         }
-        ImGui.Unindent();
         ImGui.EndChild();
         return;
 
@@ -87,10 +109,9 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
     {
         ImGui.BeginChild($"ClassHeader##{Name}{address}", new Vector2(-1, ImGui.GetTextLineHeight()));
         var style = ImGuiSmrt.PushStyle(ImGuiStyleVar.FramePadding, new Vector2(0, 0));
-        style.Push(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
-        style.Push(ImGuiStyleVar.ItemInnerSpacing, new Vector2(0, 0));
+        style.Push(ImGuiStyleVar.FrameRounding, 0);
         var color = ImGuiSmrt.PushColor(ImGuiCol.Button, Config.Styles.BackgroundColor);
-        if (ImGui.ImageButton($"Collapse##{Name}{address}", IconLoader.GetIconTextureId(IsCollapsed ? Icon16.ClosedIcon : Icon16.OpenIcon), new Vector2(16)))
+        if (ImGui.ImageButton($"Collapse##{Name}{address}", IconLoader.GetIconTextureId(IsCollapsed ? Icon16.ClosedIcon : Icon16.OpenIcon), new Vector2(8)))
         {
             IsCollapsed = !IsCollapsed;
         }
@@ -143,62 +164,132 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
 
             if (ImGuiExt.MenuWithIcon(Icon16.ButtonAdd, "Add Bytes", $"ClassAddBytes##{Name}{address}"))
             {
-                var last = Renderers.OrderBy(t => t.Key).Last().Key + 8;
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytes4, "Add 4 Byte"))
+                    AddBytes(4);
+
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytes8, "Add 8 Bytes"))
-                {
-                    Renderers.Add(last, new Unknown8Renderer());
-                    _height = -1;
-                }
+                    AddBytes(8);
 
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytes64, "Add 64 Bytes"))
-                {
-                    _height = -1;
-                    for (var i = 0; i < 64; i += 8)
-                    {
-                        Renderers.Add(last + i, new Unknown8Renderer());
-                    }
-                }
+                    AddBytes(64);
 
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytes256, "Add 256 Bytes"))
-                {
-                    _height = -1;
-                    for (var i = 0; i < 256; i += 8)
-                    {
-                        Renderers.Add(last + i, new Unknown8Renderer());
-                    }
-                }
+                    AddBytes(256);
 
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytes1024, "Add 1024 Bytes"))
-                {
-                    _height = -1;
-                    for (var i = 0; i < 1024; i += 8)
-                    {
-                        Renderers.Add(last + i, new Unknown8Renderer());
-                    }
-                }
+                    AddBytes(1024);
 
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytes4096, "Add 4096 Bytes"))
-                {
-                    _height = -1;
-                    for (var i = 0; i < 4096; i += 8)
-                    {
-                        Renderers.Add(last + i, new Unknown8Renderer());
-                    }
-                }
+                    AddBytes(4096);
+
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytesX, "Add ... Bytes"))
+                    _addingCustomBytes = true;
 
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytesX, "Add Enough Bytes"))
-                {
-                    _height = -1;
-                    for (var i = 0; i < 0x800000; i += 8)
-                    {
-                        Renderers.Add(last + i, new Unknown8Renderer());
-                    }
-                }
+                    AddBytes(0x800000);
 
                 ImGui.EndMenu();
             }
             ImGui.EndPopup();
         }
+
+        if (_addingCustomBytes)
+        {
+            ImGui.OpenPopup($"Add Bytes##{Name}{address}");
+            _addingCustomBytes = false;
+        }
+
+        if (ImGuiExt.BeginPopupModal($"Add Bytes##{Name}{address}", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize))
+        {
+            var size = (ImGui.CalcTextSize("Current Class Size:") * 3) with
+            {
+                Y = ImGui.GetTextLineHeightWithSpacing() * 10
+            };
+            var windowSize = ImGui.GetWindowViewport().Size;
+            if (windowSize.X < size.X)
+                size.X = windowSize.X;
+            if (windowSize.Y < size.Y)
+                size.Y = windowSize.Y;
+            var windowTopLeft = windowSize / 2 - size / 2;
+            ImGui.SetWindowPos(windowTopLeft);
+            ImGui.SetWindowSize(size);
+            ImGui.TextUnformatted("Number of bytes to add:");
+            var bytes = _addingCustomBytesSize;
+            bool hex = false;
+            if (ImGui.InputInt("##BytesToAdd", ref bytes, 1, 100, hex ? ImGuiInputTextFlags.CharsHexadecimal : ImGuiInputTextFlags.CharsDecimal))
+            {
+                if (bytes < 0)
+                    bytes = 0;
+                _addingCustomBytesSize = bytes;
+            }
+
+            if (ImGui.RadioButton("Decimal", !hex))
+            {
+                hex = false;
+            }
+            ImGui.SameLine();
+            if (ImGui.RadioButton("Hex", hex))
+            {
+                hex = true;
+            }
+
+            ImGui.Columns(2, "##Coll", false);
+            ImGui.TextUnformatted("Current Class Size:");
+            ImGui.NextColumn();
+            ImGui.AlignTextToFramePadding();
+            ImGui.TextUnformatted("0x" + Size.ToString("X"));
+            ImGui.SameLine();
+            ImGui.TextUnformatted(" / ");
+            ImGui.SameLine();
+            ImGui.TextUnformatted(Size.ToString());
+            ImGui.NextColumn();
+            ImGui.TextUnformatted("New Class Size:");
+            ImGui.NextColumn();
+            ImGui.AlignTextToFramePadding();
+            ImGui.TextUnformatted("0x" + (Size + bytes).ToString("X"));
+            ImGui.SameLine();
+            ImGui.TextUnformatted(" / ");
+            ImGui.SameLine();
+            ImGui.TextUnformatted((Size + bytes).ToString());
+            ImGui.NextColumn();
+            ImGui.Columns(1);
+
+            if (ImGui.Button("Ok"))
+            {
+                if(bytes > 0)
+                    AddBytes(bytes);
+                ImGui.CloseCurrentPopup();
+            }
+
+            ImGui.EndPopup();
+        }
+    }
+
+    private void AddBytes(int size)
+    {
+        while (size > 0)
+        {
+            switch (size)
+            {
+                case >= 8:
+                    Renderers.Add(new Unknown8Renderer());
+                    size -= 8;
+                    break;
+                case >= 4:
+                    Renderers.Add(new Unknown4Renderer());
+                    size -= 4;
+                    break;
+                case >= 2:
+                    Renderers.Add(new Unknown2Renderer());
+                    size -= 2;
+                    break;
+                default:
+                    Renderers.Add(new Unknown1Renderer());
+                    size -= 1;
+                    break;
+            }
+        }
+        _height = -1;
     }
 
     public float GetHeight()
@@ -206,7 +297,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         if (_height > 0)
             return _height;
         var height = ImGui.GetTextLineHeightWithSpacing();
-        return _height = height + Renderers.Sum(t => t.Value.GetHeight());
+        return _height = height + Renderers.Sum(t => t.GetHeight());
     }
 
     public void DrawCSharpCode()
