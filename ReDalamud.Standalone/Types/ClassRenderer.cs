@@ -61,11 +61,11 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         var posY = 0f;
         foreach (var (offset, renderer) in Renderers)
         {
-            if (!isVisible(posY))
-            {
-                posY += renderer.GetHeight();
-                continue;
-            }
+            //if (!isVisible(posY))
+            //{
+            //    posY += renderer.GetHeight();
+            //    continue;
+            //}
             ImGuiExt.PushTextStyleColor(Config.Styles.OffsetColor);
             ImGui.Text($"{offset:X4}");
             ImGui.PopStyleColor();
