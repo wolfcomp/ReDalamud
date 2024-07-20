@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 
 namespace ReDalamud.Standalone.Types;
 public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
@@ -335,51 +335,50 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         }
         _height = -1;
     }
-}
 
-public float GetHeight()
-{
-    if (_height > 0)
-        return _height;
-    var height = ImGui.GetTextLineHeightWithSpacing();
-    return _height = height + Renderers.Sum(t => t.GetHeight());
-}
-
-public void DrawCSharpCode()
-{
-
-}
-
-public int CompareTo(ClassRenderer? other)
-{
-    if (ReferenceEquals(this, other))
+    public float GetHeight()
     {
-        return 0;
+        if (_height > 0)
+            return _height;
+        var height = ImGui.GetTextLineHeightWithSpacing();
+        return _height = height + Renderers.Sum(t => t.GetHeight());
     }
 
-    if (other is null)
+    public void DrawCSharpCode()
     {
-        return 1;
+
     }
 
-    var isCollapsedComparison = IsCollapsed.CompareTo(other.IsCollapsed);
-    if (isCollapsedComparison != 0)
+    public int CompareTo(ClassRenderer? other)
     {
-        return isCollapsedComparison;
-    }
+        if (ReferenceEquals(this, other))
+        {
+            return 0;
+        }
 
-    var addressComparison = Address.CompareTo(other.Address);
-    if (addressComparison != 0)
-    {
-        return addressComparison;
-    }
+        if (other is null)
+        {
+            return 1;
+        }
 
-    var nameComparison = string.Compare(Name, other.Name, StringComparison.Ordinal);
-    if (nameComparison != 0)
-    {
-        return nameComparison;
-    }
+        var isCollapsedComparison = IsCollapsed.CompareTo(other.IsCollapsed);
+        if (isCollapsedComparison != 0)
+        {
+            return isCollapsedComparison;
+        }
 
-    return string.Compare(OffsetText, other.OffsetText, StringComparison.Ordinal);
-}
+        var addressComparison = Address.CompareTo(other.Address);
+        if (addressComparison != 0)
+        {
+            return addressComparison;
+        }
+
+        var nameComparison = string.Compare(Name, other.Name, StringComparison.Ordinal);
+        if (nameComparison != 0)
+        {
+            return nameComparison;
+        }
+
+        return string.Compare(OffsetText, other.OffsetText, StringComparison.Ordinal);
+    }
 }
