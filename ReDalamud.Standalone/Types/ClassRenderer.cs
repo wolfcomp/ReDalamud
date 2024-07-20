@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 
 namespace ReDalamud.Standalone.Types;
 public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
@@ -15,6 +15,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
     private bool _addingCustomBytes;
     private int _addingCustomBytesSize;
     private int _selectedIndex = -1;
+    private bool _insertingCustomBytes;
 
     public ClassRenderer()
     {
@@ -51,6 +52,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
     {
         if (address == nint.Zero)
             address = Address;
+        
         DrawHeader(address);
         if (IsCollapsed)
             return;
@@ -178,7 +180,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             }
             ImGui.EndDisabled();
 
-            if (ImGuiExt.MenuWithIcon(Icon16.ButtonAdd, "Add Bytes", $"ClassAddBytes##{Name}{address}"))
+            if (ImGuiExt.MenuWithIcon(Icon16.ButtonAddBytesX, "Add Bytes", $"ClassAddBytes##{Name}{address}"))
             {
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytes4, "Add 4 Byte"))
                     AddBytes(4);
@@ -201,11 +203,37 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytesX, "Add ... Bytes"))
                     _addingCustomBytes = true;
 
-                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytesX, "Add Enough Bytes"))
-                    AddBytes(0x800000);
+                ImGui.EndMenu();
+            }
+
+            ImGui.BeginDisabled(_selectedIndex == -1);
+            if (ImGuiExt.MenuWithIcon(Icon16.ButtonInsertBytesX, "Insert Bytes", $"ClassInsertBytes##{Name}{address}"))
+            {
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonInsertBytes4, "Insert 4 Byte"))
+                    InsertBytes(_selectedIndex, 4);
+
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonInsertBytes8, "Insert 8 Bytes"))
+                    InsertBytes(_selectedIndex, 8);
+
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonInsertBytes64, "Insert 64 Bytes"))
+                    InsertBytes(_selectedIndex, 64);
+
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonInsertBytes256, "Insert 256 Bytes"))
+                    InsertBytes(_selectedIndex, 256);
+
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonInsertBytes1024, "Insert 1024 Bytes"))
+                    InsertBytes(_selectedIndex, 1024);
+
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonInsertBytes4096, "Insert 4096 Bytes"))
+                    InsertBytes(_selectedIndex, 4096);
+
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonInsertBytesX, "Insert ... Bytes"))
+                    _insertingCustomBytes = true;
 
                 ImGui.EndMenu();
             }
+            ImGui.EndDisabled();
+
             ImGui.EndPopup();
         }
 
@@ -274,6 +302,77 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             {
                 if (bytes > 0)
                     AddBytes(bytes);
+                ImGui.CloseCurrentPopup();
+            }
+
+            ImGui.EndPopup();
+        }
+
+        if (_insertingCustomBytes)
+        {
+            ImGui.OpenPopup($"Insert Bytes##{Name}{address}");
+            _insertingCustomBytes = false;
+        }
+
+        if (ImGuiExt.BeginPopupModal($"Insert Bytes##{Name}{address}", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize))
+        {
+            var size = (ImGui.CalcTextSize("Current Class Size:") * 3) with
+            {
+                Y = ImGui.GetTextLineHeightWithSpacing() * 10
+            };
+            var windowSize = ImGui.GetWindowViewport().Size;
+            if (windowSize.X < size.X)
+                size.X = windowSize.X;
+            if (windowSize.Y < size.Y)
+                size.Y = windowSize.Y;
+            var windowTopLeft = windowSize / 2 - size / 2;
+            ImGui.SetWindowPos(windowTopLeft);
+            ImGui.SetWindowSize(size);
+            ImGui.TextUnformatted("Number of bytes to insert:");
+            var bytes = _addingCustomBytesSize;
+            bool hex = false;
+            if (ImGui.InputInt("##BytesToAdd", ref bytes, 1, 100, hex ? ImGuiInputTextFlags.CharsHexadecimal : ImGuiInputTextFlags.CharsDecimal))
+            {
+                if (bytes < 0)
+                    bytes = 0;
+                _addingCustomBytesSize = bytes;
+            }
+
+            if (ImGui.RadioButton("Decimal", !hex))
+            {
+                hex = false;
+            }
+            ImGui.SameLine();
+            if (ImGui.RadioButton("Hex", hex))
+            {
+                hex = true;
+            }
+
+            ImGui.Columns(2, "##Coll", false);
+            ImGui.TextUnformatted("Current Class Size:");
+            ImGui.NextColumn();
+            ImGui.AlignTextToFramePadding();
+            ImGui.TextUnformatted("0x" + Size.ToString("X"));
+            ImGui.SameLine();
+            ImGui.TextUnformatted(" / ");
+            ImGui.SameLine();
+            ImGui.TextUnformatted(Size.ToString());
+            ImGui.NextColumn();
+            ImGui.TextUnformatted("New Class Size:");
+            ImGui.NextColumn();
+            ImGui.AlignTextToFramePadding();
+            ImGui.TextUnformatted("0x" + (Size + bytes).ToString("X"));
+            ImGui.SameLine();
+            ImGui.TextUnformatted(" / ");
+            ImGui.SameLine();
+            ImGui.TextUnformatted((Size + bytes).ToString());
+            ImGui.NextColumn();
+            ImGui.Columns(1);
+
+            if (ImGui.Button("Ok"))
+            {
+                if (bytes > 0)
+                    InsertBytes(_selectedIndex, bytes);
                 ImGui.CloseCurrentPopup();
             }
 
