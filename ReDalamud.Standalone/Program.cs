@@ -7,13 +7,15 @@ public class Program
     private static ImGuiRenderer _renderer = null!;
     private static Timer? _timer;
     public static Random Rand = new();
-    public static void Main(string[] args)
+    public static bool ShouldSaveOnFrame = false;
+    public static unsafe void Main(string[] args)
     {
         var loc = Directory.GetCurrentDirectory();
         DockWindow.IsFirstSetup = !File.Exists(Path.Combine(loc, "imgui.ini"));
-        Config.Load();
 
         _renderer = ImGuiRenderer.CreateWindowAndGlContext("ReDalamud.Standalone", 800, 600);
+        Config.ImGuiStyle = ImGui.GetStyle().NativePtr;
+        Config.Load();
 
         var quit = false;
 
@@ -72,6 +74,12 @@ public class Program
             ConfigWindow.Draw();
             _renderer.Render();
             SDL_GL_SwapWindow(_renderer.Window);
+
+            if (ShouldSaveOnFrame)
+            {
+                Config.Save();
+                ShouldSaveOnFrame = false;
+            }
         }
 
         SDL_GL_DeleteContext(_renderer.GlContext);

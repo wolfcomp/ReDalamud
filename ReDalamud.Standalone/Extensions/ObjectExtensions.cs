@@ -18,7 +18,7 @@ public static class ObjectExtensions
 
         foreach (var method in types)
         {
-            if (method.Name == "FromIniString")
+            if (method.Name.StartsWith("FromIniString"))
             {
                 _fromIniStringMethods[method.ReturnType] = (obj, str) => method.Invoke(obj, [str])!;
             }

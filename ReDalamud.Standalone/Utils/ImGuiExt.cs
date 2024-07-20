@@ -24,7 +24,7 @@ public unsafe struct ImGuiDockNode
     public ImGuiDockNode* ParentNode;
 }
 
-public static class ImGuiExt
+public static partial class ImGuiExt
 {
     #region DockBuilder
     [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]

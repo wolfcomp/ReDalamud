@@ -3,7 +3,7 @@
 namespace ReDalamud.Standalone.Windows;
 public class ConfigWindow
 {
-    public static void Draw()
+    public static unsafe void Draw()
     {
         if(!MainMenuBar.StyleWindowOpened) return;
         ImGui.Begin("ConfigWindow", ref MainMenuBar.StyleWindowOpened, ImGuiWindowFlags.AlwaysAutoResize);
@@ -35,11 +35,6 @@ public class ConfigWindow
             //     ImGui.EndTabItem();
             // }
             //
-            // if (ImGui.BeginTabItem("Style"))
-            // {
-            //     ImGui.Text("Style");
-            //     ImGui.EndTabItem();
-            // }
 
             if (ImGui.BeginTabItem("Global"))
             {
@@ -51,8 +46,14 @@ public class ConfigWindow
                 ImGui.EndTabItem();
             }
 
+            if (ImGui.BeginTabItem("ImGui Style"))
+            {
+                ImGui.ShowStyleEditor();
+                ImGui.EndTabItem();
+            }
+
             if (ImGui.Button("Save"))
-                Config.Save();
+                ShouldSaveOnFrame = true;
 
             ImGui.EndTabBar();
         }

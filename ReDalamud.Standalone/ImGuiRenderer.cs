@@ -3,10 +3,11 @@ using ReDalamud.Standalone.Shaders;
 
 namespace ReDalamud.Standalone;
 
-public partial class ImGuiRenderer
+public unsafe partial class ImGuiRenderer
 {
     public nint Window { get; private set; }
     public nint GlContext { get; private set; }
+    public static ImGuiContext* ImGuiContext { get; private set; }
     public GLShaderProgram ShaderProgram { get; private set; }
     private readonly uint _vboHandle;
     private readonly uint _elmHandle;
@@ -23,8 +24,8 @@ public partial class ImGuiRenderer
         var (vertex, fragment) = Util.GetEmbeddedShaderFiles()["default"];
 
         ShaderProgram = new GLShaderProgram(vertex, fragment);
-
-        ImGui.SetCurrentContext(ImGui.CreateContext());
+        ImGuiContext = (ImGuiContext*)ImGui.CreateContext();
+        ImGui.SetCurrentContext((nint)ImGuiContext);
         RebuildFontAtlas();
         InitKeyMap();
         var io = ImGui.GetIO();

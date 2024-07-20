@@ -71,31 +71,28 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             //    continue;
             //}
             var renderer = Renderers[index];
-            if(index == _selectedIndex)
+            if (index == _selectedIndex)
                 ImGui.PushStyleColor(ImGuiCol.ChildBg, (Vector4)Config.Styles.SelectedColor);
-            //using var padding = ImGuiSmrt.PushStyle(ImGuiStyleVar.WindowPadding, Vector2.Zero);
-            //padding.Push(ImGuiStyleVar.FramePadding, Vector2.Zero);
-            //padding.Push(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-            //padding.Push(ImGuiStyleVar.ItemInnerSpacing, Vector2.Zero);
             ImGui.BeginChild($"ClassRendererRow###{Name}{address}{index}", childSize, false, ImGuiWindowFlags.NoScrollbar);
             renderer.DrawMemory(address + offset, offset);
             ImGui.EndChild();
             var pos = ImGui.GetCursorPos();
-            if(index == _selectedIndex)
+            if (index == _selectedIndex)
                 ImGui.PopStyleColor();
-            if(ImGui.IsItemHovered())
+            if (ImGui.IsItemHovered())
             {
                 if (ImGui.IsMouseClicked(ImGuiMouseButton.Left)) _selectedIndex = index;
                 if (ImGui.IsMouseClicked(ImGuiMouseButton.Right))
                 {
                     _selectedIndex = index;
-                    ImGui.OpenPopup($"ClassPopup##{Name}{address}{index}");
+                    ImGui.OpenPopup($"ClassPopup##{Name}{address}");
                 }
             }
 
             posY += renderer.GetHeight();
             offset += renderer.Size;
         }
+        DrawPopUp(address);
         ImGui.EndChild();
         return;
 
@@ -107,6 +104,8 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
 
     private void DrawHeader(nint address)
     {
+        if (_selectedIndex == -1)
+            ImGui.PushStyleColor(ImGuiCol.ChildBg, (Vector4)Config.Styles.SelectedColor);
         ImGui.BeginChild($"ClassHeader##{Name}{address}", new Vector2(-1, ImGui.GetTextLineHeight()));
         var style = ImGuiSmrt.PushStyle(ImGuiStyleVar.FramePadding, new Vector2(0, 0));
         style.Push(ImGuiStyleVar.FrameRounding, 0);
@@ -148,8 +147,18 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         ImGui.TextUnformatted($"[{SizeString}]");
         color.Dispose();
         ImGui.EndChild();
-        if (ImGui.IsItemHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
-            ImGui.OpenPopup($"ClassPopup##{Name}{address}");
+        if (ImGui.IsItemHovered())
+        {
+            if (ImGui.IsMouseClicked(ImGuiMouseButton.Left)) _selectedIndex = -1;
+            if (ImGui.IsMouseClicked(ImGuiMouseButton.Right))
+            {
+                _selectedIndex = -1;
+                ImGui.OpenPopup($"ClassPopup##{Name}{address}");
+            }
+        }
+
+        if (_selectedIndex == -1)
+            ImGui.PopStyleColor();
         DrawPopUp(address);
     }
 
@@ -161,6 +170,13 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             {
                 ImGui.SetClipboardText(Address.ToString("X"));
             }
+
+            ImGui.BeginDisabled(_selectedIndex == -1);
+            if (ImGuiExt.MenuWithIcon(Icon16.ExchangeButton, "Change Type", $"ChangeType##{Name}{address}"))
+            {
+                // TODO add types and replace the current renderer with the selected type and pad with unknown types if needed
+            }
+            ImGui.EndDisabled();
 
             if (ImGuiExt.MenuWithIcon(Icon16.ButtonAdd, "Add Bytes", $"ClassAddBytes##{Name}{address}"))
             {
@@ -256,7 +272,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
 
             if (ImGui.Button("Ok"))
             {
-                if(bytes > 0)
+                if (bytes > 0)
                     AddBytes(bytes);
                 ImGui.CloseCurrentPopup();
             }
@@ -292,49 +308,78 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         _height = -1;
     }
 
-    public float GetHeight()
+    private void InsertBytes(int index, int size)
     {
-        if (_height > 0)
-            return _height;
-        var height = ImGui.GetTextLineHeightWithSpacing();
-        return _height = height + Renderers.Sum(t => t.GetHeight());
+        while (size > 0)
+        {
+            switch (size)
+            {
+                case >= 8:
+                    Renderers.Insert(index, new Unknown8Renderer());
+                    size -= 8;
+                    break;
+                case >= 4:
+                    Renderers.Insert(index, new Unknown4Renderer());
+                    size -= 4;
+                    break;
+                case >= 2:
+                    Renderers.Insert(index, new Unknown2Renderer());
+                    size -= 2;
+                    break;
+                default:
+                    Renderers.Insert(index, new Unknown1Renderer());
+                    size -= 1;
+                    break;
+            }
+            index++;
+        }
+        _height = -1;
+    }
+}
+
+public float GetHeight()
+{
+    if (_height > 0)
+        return _height;
+    var height = ImGui.GetTextLineHeightWithSpacing();
+    return _height = height + Renderers.Sum(t => t.GetHeight());
+}
+
+public void DrawCSharpCode()
+{
+
+}
+
+public int CompareTo(ClassRenderer? other)
+{
+    if (ReferenceEquals(this, other))
+    {
+        return 0;
     }
 
-    public void DrawCSharpCode()
+    if (other is null)
     {
-
+        return 1;
     }
 
-    public int CompareTo(ClassRenderer? other)
+    var isCollapsedComparison = IsCollapsed.CompareTo(other.IsCollapsed);
+    if (isCollapsedComparison != 0)
     {
-        if (ReferenceEquals(this, other))
-        {
-            return 0;
-        }
-
-        if (other is null)
-        {
-            return 1;
-        }
-
-        var isCollapsedComparison = IsCollapsed.CompareTo(other.IsCollapsed);
-        if (isCollapsedComparison != 0)
-        {
-            return isCollapsedComparison;
-        }
-
-        var addressComparison = Address.CompareTo(other.Address);
-        if (addressComparison != 0)
-        {
-            return addressComparison;
-        }
-
-        var nameComparison = string.Compare(Name, other.Name, StringComparison.Ordinal);
-        if (nameComparison != 0)
-        {
-            return nameComparison;
-        }
-
-        return string.Compare(OffsetText, other.OffsetText, StringComparison.Ordinal);
+        return isCollapsedComparison;
     }
+
+    var addressComparison = Address.CompareTo(other.Address);
+    if (addressComparison != 0)
+    {
+        return addressComparison;
+    }
+
+    var nameComparison = string.Compare(Name, other.Name, StringComparison.Ordinal);
+    if (nameComparison != 0)
+    {
+        return nameComparison;
+    }
+
+    return string.Compare(OffsetText, other.OffsetText, StringComparison.Ordinal);
+}
 }

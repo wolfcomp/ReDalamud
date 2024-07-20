@@ -32,7 +32,7 @@ public class DockWindow
             windowFlags |= ImGuiWindowFlags.NoBackground;
 
         if (!Padding)
-            ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new System.Numerics.Vector2(0, 0));
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(0, 0));
 
         ImGui.Begin("DockSpace", windowFlags);
         if (!Padding)
@@ -45,7 +45,7 @@ public class DockWindow
         if (io.ConfigFlags.HasFlag(ImGuiConfigFlags.DockingEnable))
         {
             DockSpaceId = ImGui.GetID("DockSpace");
-            ImGui.DockSpace(DockSpaceId.Value, new System.Numerics.Vector2(0, 0), Flags);
+            ImGui.DockSpace(DockSpaceId.Value, new Vector2(0, 0), Flags);
             if (IsFirstSetup)
             {
                 IsFirstSetup = false;

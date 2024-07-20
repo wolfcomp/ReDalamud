@@ -10,43 +10,43 @@ public static partial class ImGuiSmrt
 
         private int _count;
 
+        public static Type GetStyleIdxType(ImGuiStyleVar idx) => idx switch
+        {
+                ImGuiStyleVar.Alpha => typeof(float),
+                ImGuiStyleVar.WindowRounding => typeof(float),
+                ImGuiStyleVar.WindowBorderSize => typeof(float),
+                ImGuiStyleVar.ChildRounding => typeof(float),
+                ImGuiStyleVar.ChildBorderSize => typeof(float),
+                ImGuiStyleVar.PopupRounding => typeof(float),
+                ImGuiStyleVar.PopupBorderSize => typeof(float),
+                ImGuiStyleVar.FrameRounding => typeof(float),
+                ImGuiStyleVar.FrameBorderSize => typeof(float),
+                ImGuiStyleVar.IndentSpacing => typeof(float),
+                ImGuiStyleVar.ScrollbarSize => typeof(float),
+                ImGuiStyleVar.ScrollbarRounding => typeof(float),
+                ImGuiStyleVar.GrabMinSize => typeof(float),
+                ImGuiStyleVar.GrabRounding => typeof(float),
+                ImGuiStyleVar.TabRounding => typeof(float),
+                ImGuiStyleVar.DisabledAlpha => typeof(float),
+                ImGuiStyleVar.SeparatorTextBorderSize => typeof(float),
+                ImGuiStyleVar.DockingSeparatorSize => typeof(float),
+                ImGuiStyleVar.WindowPadding => typeof(Vector2),
+                ImGuiStyleVar.WindowMinSize => typeof(Vector2),
+                ImGuiStyleVar.WindowTitleAlign => typeof(Vector2),
+                ImGuiStyleVar.FramePadding => typeof(Vector2),
+                ImGuiStyleVar.ItemSpacing => typeof(Vector2),
+                ImGuiStyleVar.ItemInnerSpacing => typeof(Vector2),
+                ImGuiStyleVar.CellPadding => typeof(Vector2),
+                ImGuiStyleVar.ButtonTextAlign => typeof(Vector2),
+                ImGuiStyleVar.SelectableTextAlign => typeof(Vector2),
+                ImGuiStyleVar.SeparatorTextAlign => typeof(Vector2),
+                ImGuiStyleVar.SeparatorTextPadding => typeof(Vector2),
+                _ => throw new ArgumentOutOfRangeException(nameof(idx), idx, null),
+        };
+
         private static void CheckStyleIdx(ImGuiStyleVar idx, Type type)
         {
-            var shouldThrow = idx switch
-            {
-                ImGuiStyleVar.Alpha => type != typeof(float),
-                ImGuiStyleVar.WindowPadding => type != typeof(Vector2),
-                ImGuiStyleVar.WindowRounding => type != typeof(float),
-                ImGuiStyleVar.WindowBorderSize => type != typeof(float),
-                ImGuiStyleVar.WindowMinSize => type != typeof(Vector2),
-                ImGuiStyleVar.WindowTitleAlign => type != typeof(Vector2),
-                ImGuiStyleVar.ChildRounding => type != typeof(float),
-                ImGuiStyleVar.ChildBorderSize => type != typeof(float),
-                ImGuiStyleVar.PopupRounding => type != typeof(float),
-                ImGuiStyleVar.PopupBorderSize => type != typeof(float),
-                ImGuiStyleVar.FramePadding => type != typeof(Vector2),
-                ImGuiStyleVar.FrameRounding => type != typeof(float),
-                ImGuiStyleVar.FrameBorderSize => type != typeof(float),
-                ImGuiStyleVar.ItemSpacing => type != typeof(Vector2),
-                ImGuiStyleVar.ItemInnerSpacing => type != typeof(Vector2),
-                ImGuiStyleVar.IndentSpacing => type != typeof(float),
-                ImGuiStyleVar.CellPadding => type != typeof(Vector2),
-                ImGuiStyleVar.ScrollbarSize => type != typeof(float),
-                ImGuiStyleVar.ScrollbarRounding => type != typeof(float),
-                ImGuiStyleVar.GrabMinSize => type != typeof(float),
-                ImGuiStyleVar.GrabRounding => type != typeof(float),
-                ImGuiStyleVar.TabRounding => type != typeof(float),
-                ImGuiStyleVar.ButtonTextAlign => type != typeof(Vector2),
-                ImGuiStyleVar.SelectableTextAlign => type != typeof(Vector2),
-                ImGuiStyleVar.DisabledAlpha => type != typeof(float),
-                ImGuiStyleVar.SeparatorTextBorderSize => type != typeof(float),
-                ImGuiStyleVar.SeparatorTextAlign => type != typeof(Vector2),
-                ImGuiStyleVar.SeparatorTextPadding => type != typeof(Vector2),
-                ImGuiStyleVar.DockingSeparatorSize => type != typeof(float),
-                _ => throw new ArgumentOutOfRangeException(nameof(idx), idx, null),
-            };
-
-            if (shouldThrow)
+            if (GetStyleIdxType(idx) != type)
                 throw new ArgumentException($"Invalid type for {idx}");
         }
 
@@ -118,33 +118,6 @@ public static partial class ImGuiSmrt
             num = Math.Min(num, _count);
             _count -= num;
             ImGui.PopStyleVar(num);
-            Stack.RemoveRange(Stack.Count - num, num);
-        }
-
-        public void Dispose() => Pop(_count);
-    }
-
-    public class Color : IDisposable
-    {
-        public static List<(ImGuiCol idx, Standalone.Color color)> Stack = new();
-
-        private int _count;
-
-        public Color Push(ImGuiCol idx, Standalone.Color color)
-        {
-            Stack.Add((idx, color));
-            ImGui.PushStyleColor(idx, (Vector4)color);
-            _count++;
-            return this;
-        }
-
-        public Color PushTextColor(Standalone.Color color) => Push(ImGuiCol.Text, color);
-
-        public void Pop(int num = 1)
-        {
-            num = Math.Min(num, _count);
-            _count -= num;
-            ImGui.PopStyleColor(num);
             Stack.RemoveRange(Stack.Count - num, num);
         }
 
