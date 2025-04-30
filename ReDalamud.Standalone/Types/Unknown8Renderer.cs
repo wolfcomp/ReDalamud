@@ -1,6 +1,7 @@
 ﻿namespace ReDalamud.Standalone.Types;
 public class Unknown8Renderer : IUnknownRenderer
 {
+    public bool HasName => false;
     public bool HasCode => false;
     public int Size => 8;
     private float _height = -1;
@@ -10,9 +11,7 @@ public class Unknown8Renderer : IUnknownRenderer
         var bytes = MemoryRead.ReadBytes(address, Size);
         _bytes = bytes;
         var valueInt64 = BitConverter.ToInt64(bytes);
-        var valueUInt64 = BitConverter.ToUInt64(bytes);
         var valueFloat = BitConverter.ToSingle(bytes);
-        var valueDouble = BitConverter.ToDouble(bytes);
         var stringFloat = valueFloat is > -999999.0f and < 999999.0f ? float.Round(valueFloat, 3).ToString("F3") : "#####";
         var valueHex = string.Join("", BitConverter.ToString(bytes).Split('-').Reverse()).TrimStart('0');
         if(!string.IsNullOrWhiteSpace(valueHex))

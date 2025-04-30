@@ -1,6 +1,4 @@
-﻿using ImGui = ImGuiNET.ImGui;
-
-namespace ReDalamud.Standalone.Windows;
+﻿namespace ReDalamud.Standalone.Windows;
 public class ConfigWindow
 {
     public static unsafe void Draw()
@@ -64,7 +62,7 @@ public class ConfigWindow
     private static void DrawColorPickerOption(string name, ref Color color)
     {
         var internalColor = (Vector4)color;
-        if (ImGui.ColorEdit4(name, ref internalColor, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreviewHalf | ImGuiColorEditFlags.DisplayRGB))
+        if (ImGui.ColorEdit4(name, ref internalColor, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreviewHalf | ImGuiColorEditFlags.DisplayRgb))
             color = internalColor;
     }
 }

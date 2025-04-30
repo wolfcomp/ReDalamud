@@ -99,4 +99,9 @@ public static class Util
         fixed (char* chPtr = &s.GetPinnableReference())
             return Encoding.UTF8.GetBytes(chPtr + start, length, utf8Bytes, utf8ByteCount);
     }
+
+    public static string GenerateRandomName()
+    {
+        return $"N{Rand.Next(0, 0xFFFFFF):X8}";
+    }
 }

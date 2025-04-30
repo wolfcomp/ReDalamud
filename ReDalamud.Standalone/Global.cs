@@ -1,10 +1,14 @@
 ﻿global using static ReDalamud.Standalone.Program;
-global using static SDL2.SDL;
-global using static SDL2.SDL_image;
+global using static ReDalamud.Standalone.Utils.Util;
 global using ReDalamud.Standalone.Extensions;
 global using ReDalamud.Standalone.Resources;
 global using ReDalamud.Standalone.Windows;
 global using ReDalamud.Standalone.Utils;
 global using System.Diagnostics;
 global using System.Numerics;
-global using ImGuiNET;
+global using Hexa.NET.ImGui;
+global using Hexa.NET.ImGui.Backends.SDL3;
+global using Hexa.NET.ImGui.Backends.OpenGL3;
+global using Hexa.NET.OpenGL;
+global using Hexa.NET.SDL3;
+global using Hexa.NET.SDL3.Image;

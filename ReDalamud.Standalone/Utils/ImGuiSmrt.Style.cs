@@ -115,10 +115,12 @@ public static partial class ImGuiSmrt
 
         public void Pop(int num = 1)
         {
-            num = Math.Min(num, _count);
-            _count -= num;
-            ImGui.PopStyleVar(num);
-            Stack.RemoveRange(Stack.Count - num, num);
+            for (var i = 0; i < num; i++)
+            {
+                _count--;
+                ImGui.PopStyleVar();
+                Stack.RemoveAt(Stack.Count - 1);
+            }
         }
 
         public void Dispose() => Pop(_count);

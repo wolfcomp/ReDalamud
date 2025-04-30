@@ -1,4 +1,5 @@
 ﻿using ReDalamud.Standalone.Types;
+using SDLEvent = Hexa.NET.SDL3.SDLEvent;
 
 namespace ReDalamud.Standalone;
 
@@ -14,14 +15,14 @@ public class Program
         DockWindow.IsFirstSetup = !File.Exists(Path.Combine(loc, "imgui.ini"));
 
         _renderer = ImGuiRenderer.CreateWindowAndGlContext("ReDalamud.Standalone", 800, 600);
-        Config.ImGuiStyle = ImGui.GetStyle().NativePtr;
+        // Config.ImGuiStyle = ImGui.GetStyle();
         Config.Load();
 
         var quit = false;
 
         var process = MemoryRead.OpenProcess("ffxiv_dx11");
 
-        if(process != nint.Zero)
+        if (process != nint.Zero)
         {
             Console.WriteLine("Opened process successfully");
             StaticClassView.CurrentClassView = new ClassRenderer(MemoryRead.GetOpenedProcessAddress());
@@ -33,8 +34,8 @@ public class Program
             Console.WriteLine("Failed to open process");
         }
 
-        var imGuiCols = Enum.GetValues<ImGuiCol>().Where(t => t != ImGuiCol.COUNT).ToList();
-        var imGuiStyleVars = Enum.GetValues<ImGuiStyleVar>().Where(t => t != ImGuiStyleVar.COUNT).ToList();
+        var imGuiCols = Enum.GetValues<ImGuiCol>().Where(t => t != ImGuiCol.Count).ToList();
+        var imGuiStyleVars = Enum.GetValues<ImGuiStyleVar>().Where(t => t != ImGuiStyleVar.Count).ToList();
         foreach (var imGuiCol in imGuiCols)
         {
             unsafe
@@ -50,20 +51,23 @@ public class Program
             ImGuiSmrt.Style.Stack.Add((imGuiStyleVar, vec));
         }
 
+        SDLEvent sdlEvent = default;
+
         while (!quit)
         {
-            while(SDL_PollEvent(out var e) != 0)
+            SDL.PumpEvents();
+            while (SDL.PollEvent(ref sdlEvent))
             {
-                _renderer.ProcessEvent(e);
-                switch(e.type)
+                ImGuiImplSDL3.SDL3ProcessEvent((Hexa.NET.ImGui.Backends.SDL3.SDLEvent*)&sdlEvent);
+                quit = (SDLEventType)sdlEvent.Type switch
                 {
-                    case SDL_EventType.SDL_QUIT:
-                        quit = true;
-                        break;
-                }
+                    SDLEventType.Quit or SDLEventType.Terminating => true,
+                    SDLEventType.WindowCloseRequested => sdlEvent.Window.WindowID == _renderer.WindowId,
+                    _ => quit
+                };
             }
 
-            _renderer.ClearColor(0.05f, 0.05f, 0.05f, 1f);
+            _renderer.Clear(0.05f, 0.05f, 0.05f, 1f);
             _renderer.NewFrame();
             MainMenuBar.Draw();
             DockWindow.Draw();
@@ -73,7 +77,6 @@ public class Program
             StaticClassView.Draw();
             ConfigWindow.Draw();
             _renderer.Render();
-            SDL_GL_SwapWindow(_renderer.Window);
 
             if (ShouldSaveOnFrame)
             {
@@ -82,11 +85,13 @@ public class Program
             }
         }
 
-        SDL_GL_DeleteContext(_renderer.GlContext);
-        SDL_DestroyWindow(_renderer.Window);
-        SDL_Quit();
+        ImGuiImplOpenGL3.Shutdown();
+        ImGuiImplSDL3.SDL3Shutdown();
+        ImGui.DestroyContext();
+        _renderer.Dispose();
         _timer?.Dispose();
         IconLoader.Dispose();
         MemoryRead.Dispose();
+        SDL.Quit();
     }
 }

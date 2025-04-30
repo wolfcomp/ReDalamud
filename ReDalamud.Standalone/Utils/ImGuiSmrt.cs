@@ -1,5 +1,4 @@
-﻿using Vector4 = System.Numerics.Vector4;
-using ExtColor = ReDalamud.Standalone.Color;
+﻿using ExtColor = ReDalamud.Standalone.Color;
 
 namespace ReDalamud.Standalone.Utils;
 public static partial class ImGuiSmrt

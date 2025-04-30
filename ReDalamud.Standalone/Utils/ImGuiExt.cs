@@ -120,7 +120,7 @@ public static partial class ImGuiExt
             ImGui.PushStyleColor(ImGuiCol.ChildBg, style.Colors[(int)ImGuiCol.ButtonHovered]);
             b = true;
         }
-        ImGui.BeginChild($"SelectableWithIcon##{label}", childSize, false, ImGuiWindowFlags.NoScrollbar);
+        ImGui.BeginChild($"SelectableWithIcon##{label}", childSize, ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar);
         ImGui.Image(IconLoader.GetIconTextureId(icon), new Vector2(16, 16));
         ImGui.SameLine();
         ImGui.TextUnformatted(label);
@@ -150,7 +150,7 @@ public static partial class ImGuiExt
             ImGui.PushStyleColor(ImGuiCol.ChildBg, style.Colors[(int)ImGuiCol.ButtonHovered]);
             b = true;
         }
-        ImGui.BeginChild($"MenuWithIcon##{label}", childSize, false, ImGuiWindowFlags.NoScrollbar);
+        ImGui.BeginChild($"MenuWithIcon##{label}", childSize, ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar);
         ImGui.Image(IconLoader.GetIconTextureId(icon), new Vector2(16, 16));
         ImGui.SameLine();
         ImGui.TextUnformatted(label);
@@ -231,32 +231,6 @@ public static partial class ImGuiExt
             var nth = minth < 0 ? thickness / 2 : minth;
             return float.Max(nth, float.Sin(((i - nextdot) / mdots) * PI) * thickness);
         }
-    }
-
-    public static unsafe bool BeginPopupModal(ReadOnlySpan<char> name, ImGuiWindowFlags flags)
-    {
-        Span<byte> numPtr;
-        if (name != null!)
-        {
-            var utf8ByteCount = Encoding.UTF8.GetByteCount(name);
-            numPtr = utf8ByteCount <= 2048 ? stackalloc byte[utf8ByteCount + 1] : throw new ArgumentOutOfRangeException(nameof(name), "Can't have a name of more than 2048 UTF8 bytes");
-            int utf8;
-            fixed (byte* numPtr1 = numPtr)
-                utf8 = Util.GetUtf8(name, numPtr1, utf8ByteCount);
-            numPtr[utf8] = (byte)0;
-        }
-        else
-            throw new ArgumentNullException(nameof(name));
-
-        int num2;
-        fixed (byte* numPtr1 = numPtr)
-            num2 = (int)ImGuiNative.igBeginPopupModal(numPtr1, null, flags);
-        return (uint)num2 > 0U;
-    }
-
-    public static unsafe bool BeginPopupModal(string name, ImGuiWindowFlags flags)
-    {
-        return BeginPopupModal(name.ToCharArray().AsSpan(), flags);
     }
 
     #region Input
@@ -422,6 +396,11 @@ public static partial class ImGuiExt
             ImGuiStyleVar.TabRounding => style.TabRounding,
             ImGuiStyleVar.SeparatorTextBorderSize => style.SeparatorTextBorderSize,
             ImGuiStyleVar.DockingSeparatorSize => style.DockingSeparatorSize,
+            ImGuiStyleVar.ImageBorderSize => style.ImageBorderSize,
+            ImGuiStyleVar.TabBorderSize => style.TabBorderSize,
+            ImGuiStyleVar.TabBarBorderSize => style.TabBarBorderSize,
+            ImGuiStyleVar.TabBarOverlineSize => style.TabBarOverlineSize,
+            ImGuiStyleVar.TableAngledHeadersAngle => style.TableAngledHeadersAngle,
             _ => null
         };
     }
@@ -441,6 +420,7 @@ public static partial class ImGuiExt
             ImGuiStyleVar.SelectableTextAlign => style.SelectableTextAlign,
             ImGuiStyleVar.SeparatorTextAlign => style.SeparatorTextAlign,
             ImGuiStyleVar.SeparatorTextPadding => style.SeparatorTextPadding,
+            ImGuiStyleVar.TableAngledHeadersTextAlign => style.TableAngledHeadersTextAlign,
             _ => null
         };
     }

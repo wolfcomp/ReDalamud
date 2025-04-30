@@ -3,13 +3,14 @@
 namespace ReDalamud.Standalone.Types;
 public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
 {
+    public bool HasName => true;
     public bool HasCode => true;
     public int Size => Renderers.Sum(t => t.Size);
     public List<IRenderer> Renderers = new();
     public bool IsCollapsed;
     public nint Address = (nint)0x140000000;
     public string Name = GenerateRandomName();
-    public string OffsetText = "140000000";
+    public string OffsetText;
     private string SizeString => Config.Global.DisplayAsHex ? "0x" + Size.ToString("X") : Size.ToString();
     private float _height = -1;
     private bool _addingCustomBytes;
@@ -34,11 +35,6 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         OffsetText = address.ToString("X");
     }
 
-    private static string GenerateRandomName()
-    {
-        return $"N{Rand.Next(0, 0xFFFFFF):X8}";
-    }
-
     public bool DrawName(bool isSelected = false)
     {
         // TODO: Add check if the class has an instance and change the color of the name to address color
@@ -57,10 +53,8 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         if (IsCollapsed)
             return;
 
-        var minWindow = ImGui.GetWindowContentRegionMin();
-        var maxWindow = ImGui.GetWindowContentRegionMax();
         var scrollY = ImGui.GetScrollY();
-        var windowHeight = maxWindow.Y - minWindow.Y;
+        var windowHeight = ImGui.GetContentRegionAvail().Y;
         ImGui.BeginChild($"ClassRendererMemory##{Name}{address}", new Vector2(-1, GetHeight()));
         var posY = 0f;
         offset = 0;
@@ -75,7 +69,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             var renderer = Renderers[index];
             if (index == _selectedIndex)
                 ImGui.PushStyleColor(ImGuiCol.ChildBg, (Vector4)Config.Styles.SelectedColor);
-            ImGui.BeginChild($"ClassRendererRow###{Name}{address}{index}", childSize, false, ImGuiWindowFlags.NoScrollbar);
+            ImGui.BeginChild($"ClassRendererRow###{Name}{address}{index}", childSize, ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar);
             renderer.DrawMemory(address + offset, offset);
             ImGui.EndChild();
             var pos = ImGui.GetCursorPos();
@@ -106,12 +100,14 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
 
     private void DrawHeader(nint address)
     {
+        var style = new ImGuiSmrt.Style();
+        var color = new ImGuiSmrt.Color();
         if (_selectedIndex == -1)
-            ImGui.PushStyleColor(ImGuiCol.ChildBg, (Vector4)Config.Styles.SelectedColor);
+            color.Push(ImGuiCol.ChildBg, (Vector4)Config.Styles.SelectedColor);
         ImGui.BeginChild($"ClassHeader##{Name}{address}", new Vector2(-1, ImGui.GetTextLineHeight()));
-        var style = ImGuiSmrt.PushStyle(ImGuiStyleVar.FramePadding, new Vector2(0, 0));
+        style.Push(ImGuiStyleVar.FramePadding, new Vector2(0, 0));
         style.Push(ImGuiStyleVar.FrameRounding, 0);
-        var color = ImGuiSmrt.PushColor(ImGuiCol.Button, Config.Styles.BackgroundColor);
+        color.Push(ImGuiCol.Button, Config.Styles.BackgroundColor);
         if (ImGui.ImageButton($"Collapse##{Name}{address}", IconLoader.GetIconTextureId(IsCollapsed ? Icon16.ClosedIcon : Icon16.OpenIcon), new Vector2(8)))
         {
             IsCollapsed = !IsCollapsed;
@@ -159,8 +155,6 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             }
         }
 
-        if (_selectedIndex == -1)
-            ImGui.PopStyleColor();
         DrawPopUp(address);
     }
 
@@ -176,7 +170,18 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             ImGui.BeginDisabled(_selectedIndex == -1);
             if (ImGuiExt.MenuWithIcon(Icon16.ExchangeButton, "Change Type", $"ChangeType##{Name}{address}"))
             {
-                // TODO add types and replace the current renderer with the selected type and pad with unknown types if needed
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonHex64, "Hex64"))
+                    InsertType(_selectedIndex, new Unknown8Renderer());
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonHex32, "Hex32"))
+                    InsertType(_selectedIndex, new Unknown8Renderer());
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonHex16, "Hex16"))
+                    InsertType(_selectedIndex, new Unknown8Renderer());
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonHex8, "Hex8"))
+                    InsertType(_selectedIndex, new Unknown8Renderer());
+                ImGui.Separator();
+                if (ImGuiExt.SelectableWithIcon(Icon16.ButtonNInt, "NInt"))
+                    InsertType(_selectedIndex, new NintRenderer());
+                // nint, int64, int32, int16, int8, ImGui.Seperator(), nuint, uint64 / QWORD, uint32 / DWORD, uint16 / WORD, uint8 / BYTE, ImGui.Seperator(), bool, bitfield, Enum, , ImGui.Seperator(), float, double, ImGui.Seperator(), vector4, vector3, vector2, matrix 4x4, matrix 3x4, matrix 3x3, ImGui.Seperator(), utf8 / ascii text, utf8 / ascii text pointer, utf16 / unicode text, utf16 / unicode text pointer, ImGui.Seperator(), pointer, array, union, ImGui.Seperator(), class instance, ImGui.Seperator(), vtable pointer, function, function pointer, ImGui.Seperator(), custom
             }
             ImGui.EndDisabled();
 
@@ -243,7 +248,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             _addingCustomBytes = false;
         }
 
-        if (ImGuiExt.BeginPopupModal($"Add Bytes##{Name}{address}", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize))
+        if (ImGui.BeginPopupModal($"Add Bytes##{Name}{address}", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize))
         {
             var size = (ImGui.CalcTextSize("Current Class Size:") * 3) with
             {
@@ -314,7 +319,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             _insertingCustomBytes = false;
         }
 
-        if (ImGuiExt.BeginPopupModal($"Insert Bytes##{Name}{address}", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize))
+        if (ImGui.BeginPopupModal($"Insert Bytes##{Name}{address}", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize))
         {
             var size = (ImGui.CalcTextSize("Current Class Size:") * 3) with
             {
@@ -433,6 +438,36 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             index++;
         }
         _height = -1;
+    }
+
+    private void InsertType(int index, IRenderer renderer)
+    {
+        var sizeLeft = Renderers[index].Size - renderer.Size;
+        Renderers[index] = renderer;
+        index++;
+        while (sizeLeft > 0)
+        {
+            switch (sizeLeft)
+            {
+                case >= 8:
+                    Renderers.Insert(index + 1, new Unknown8Renderer());
+                    sizeLeft -= 8;
+                    break;
+                case >= 4:
+                    Renderers.Insert(index + 1, new Unknown4Renderer());
+                    sizeLeft -= 4;
+                    break;
+                case >= 2:
+                    Renderers.Insert(index + 1, new Unknown2Renderer());
+                    sizeLeft -= 2;
+                    break;
+                default:
+                    Renderers.Insert(index + 1, new Unknown1Renderer());
+                    sizeLeft -= 1;
+                    break;
+            }
+            index++;
+        }
     }
 
     public float GetHeight()

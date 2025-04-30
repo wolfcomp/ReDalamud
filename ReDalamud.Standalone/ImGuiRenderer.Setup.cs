@@ -1,60 +1,60 @@
-﻿using static ReDalamud.Standalone.GL;
-
-namespace ReDalamud.Standalone;
+﻿namespace ReDalamud.Standalone;
 
 public partial class ImGuiRenderer
 {
-    public static ImGuiRenderer CreateWindowAndGlContext(string title, int width, int height, bool fullscreen = false,
+    public static unsafe ImGuiRenderer CreateWindowAndGlContext(string title, int width, int height, bool fullscreen = false,
         bool highDpi = false)
     {
-        SDL_Init(SDL_INIT_VIDEO);
-        SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_CONTEXT_FLAGS, (int)SDL_GLcontext.SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
-        SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_CONTEXT_PROFILE_MASK, (int)SDL_GLprofile.SDL_GL_CONTEXT_PROFILE_CORE);
-        SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-        SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_CONTEXT_MINOR_VERSION, 2);
+        SDL.SetHint(SDL.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
+        SDL.Init(SDLInitFlags.Events | SDLInitFlags.Video);
 
-        SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_DOUBLEBUFFER, 1);
-        SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_DEPTH_SIZE, 24);
-        SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_ALPHA_SIZE, 8);
-        SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_STENCIL_SIZE, 8);
-
-        var windowFlags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_RESIZABLE;
+        var windowFlags = SDLWindowFlags.Opengl | SDLWindowFlags.Resizable;
         if (fullscreen)
-            windowFlags |= SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
+            windowFlags |= SDLWindowFlags.Fullscreen;
         if (highDpi)
-            windowFlags |= SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI;
+            windowFlags |= SDLWindowFlags.AllowHighdpi;
 
-        var window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, windowFlags);
-        var glContext = CreateGlContext(window);
+        var window = SDL.CreateWindow(title, width, height, windowFlags);
+
+        var guiContext = ImGui.CreateContext();
+        ImGui.SetCurrentContext(guiContext);
+
+        var io = ImGui.GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
+        io.ConfigFlags |= ImGuiConfigFlags.NavEnableGamepad;
+        io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
+        io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable;
+        io.ConfigViewportsNoAutoMerge = false;
+        io.ConfigViewportsNoTaskBarIcon = false;
+            
+        var glContext = SDL.GLCreateContext(window);
+
+        ImGuiImplSDL3.SetCurrentContext(guiContext);
+        if (!ImGuiImplSDL3.SDL3InitForOpenGL(new SDLWindowPtr((Hexa.NET.ImGui.Backends.SDL3.SDLWindow*)window),
+                (void*)glContext.Handle))
+        {
+            SDL.Quit();
+            throw new Exception("ImGuiImplSDL3.SDL3InitForOpenGL failed");
+        }
+        ImGuiImplOpenGL3.SetCurrentContext(guiContext);
+        if (!ImGuiImplOpenGL3.Init((byte*)null))
+        {
+            SDL.Quit();
+            throw new Exception("ImGuiImplOpenGL3.Init failed");
+        }
+
         return new ImGuiRenderer(window, glContext);
     }
 
-    static nint CreateGlContext(nint window)
+    public static ImTextureID LoadTexture(nint pixelData, int width, int height, GLPixelFormat format = GLPixelFormat.Rgba, GLInternalFormat internalFormat = GLInternalFormat.Rgba)
     {
-        var glContext = SDL_GL_CreateContext(window);
-        if (glContext == nint.Zero)
-            throw new Exception("Failed to create OpenGL context.");
-
-        SDL_GL_MakeCurrent(window, glContext);
-        SDL_GL_SetSwapInterval(1);
-
-        glClearColor(0f, 0f, 0f, 1f);
-        glClear(ClearBufferMask.ColorBufferBit);
-        SDL_GL_SwapWindow(window);
-
-        Console.WriteLine($"GL Version: {glGetString(StringName.Version)}");
-        return glContext;
-    }
-
-    public static uint LoadTexture(nint pixelData, int width, int height, PixelFormat format = PixelFormat.Rgba, PixelInternalFormat internalFormat = PixelInternalFormat.Rgba)
-    {
-        var textureId = GenTexture();
-        glPixelStorei(PixelStoreParameter.UnpackAlignment, 1);
-        glBindTexture(TextureTarget.Texture2D, textureId);
-        glTexImage2D(TextureTarget.Texture2D, 0, internalFormat, width, height, 0, format, PixelType.UnsignedByte, pixelData);
-        glTexParameteri(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, TextureParameter.Linear);
-        glTexParameteri(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, TextureParameter.Linear);
-        glBindTexture(TextureTarget.Texture2D, 0);
+        var textureId = GL.GenTexture();
+        GL.PixelStorei(GLPixelStoreParameter.UnpackAlignment, 1);
+        GL.BindTexture(GLTextureTarget.Texture2D, textureId);
+        GL.TexImage2D(GLTextureTarget.Texture2D, 0, internalFormat, width, height, 0, format, GLPixelType.UnsignedByte, pixelData);
+        GL.TexParameteri(GLTextureTarget.Texture2D, GLTextureParameterName.MagFilter, (int)GLTextureMagFilter.Linear);
+        GL.TexParameteri(GLTextureTarget.Texture2D, GLTextureParameterName.MinFilter, (int)GLTextureMinFilter.Linear);
+        GL.BindTexture(GLTextureTarget.Texture2D, 0);
         return textureId;
     }
 }

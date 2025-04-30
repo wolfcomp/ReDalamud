@@ -8,6 +8,7 @@ using Windows.Foundation.Collections;
 namespace ReDalamud.Standalone.Types;
 public class Unknown4Renderer : IUnknownRenderer
 {
+    public bool HasName => false;
     public bool HasCode => false;
     public int Size => 4;
     private float _height = -1;

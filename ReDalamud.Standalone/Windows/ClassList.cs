@@ -26,7 +26,7 @@ public class ClassList
             ImGui.End();
             return;
         }
-        ImGuiListClipperPtr clipper = new(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
+        var clipper = ImGui.ImGuiListClipper();
         clipper.Begin(_loadedFfxivClientStructTypes.Count, ImGui.GetTextLineHeightWithSpacing());
         while (clipper.Step())
         {

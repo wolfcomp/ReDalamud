@@ -1,4 +1,6 @@
-﻿namespace ReDalamud.Standalone.Windows;
+﻿using SDLEvent = Hexa.NET.SDL3.SDLEvent;
+
+namespace ReDalamud.Standalone.Windows;
 
 public class MainMenuBar
 {
@@ -13,11 +15,11 @@ public class MainMenuBar
             {
                 if(ImGui.MenuItem("Exit"))
                 {
-                    var quitEvent = new SDL_Event
+                    var quitEvent = new SDLEvent
                     {
-                        type = SDL_EventType.SDL_QUIT
+                        Type = (int)SDLEventType.Quit
                     };
-                    SDL_PushEvent(ref quitEvent);
+                    SDL.PushEvent(ref quitEvent);
                 }
 
                 if (ImGui.MenuItem("Open", "Ctrl+O"))

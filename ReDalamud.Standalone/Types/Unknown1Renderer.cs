@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 namespace ReDalamud.Standalone.Types;
 public class Unknown1Renderer : IUnknownRenderer
 {
+    public bool HasName => false;
     public bool HasCode => false;
     public int Size => 1;
     private float _height = -1;

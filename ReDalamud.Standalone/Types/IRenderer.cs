@@ -1,6 +1,7 @@
 ﻿namespace ReDalamud.Standalone.Types;
 public interface IRenderer
 {
+    bool HasName { get; }
     bool HasCode { get; }
     int Size { get; }
     void DrawMemory(nint address, int offset);
