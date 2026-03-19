@@ -74,38 +74,41 @@ public unsafe partial class ImGuiRenderer
 
         public Vector2 Size => new(surface->W, surface->H);
 
-        public TextureWrap(ReadOnlySpan<byte> data)
+        public TextureWrap(ReadOnlySpan<byte> data, ImUtf8String type)
         {
-            var ioStream = SDL.IOFromMem(Unsafe.AsPointer(in data), (nuint)data.Length);
-            surface = SDLImage.LoadIO(ioStream, true);
-
-            if (surface->Format != SDLPixelFormat.Abgr8888)
-                surface = SDL.ConvertSurface(surface, SDLPixelFormat.Abgr8888);
-            var createInfo = new SDLGPUTextureCreateInfo
+            fixed (byte* ptr = data)
             {
-                Width = (uint)surface->W,
-                Height = (uint)surface->H,
-                Format = SDLGPUTextureFormat.R8G8B8A8Unorm,
-                Usage = (uint)SDLGPUTextureUsageFlags.Sampler,
-                LayerCountOrDepth = 1,
-                NumLevels = 1,
-                Type = SDLGPUTextureType.Texturetype2D,
-                SampleCount = SDLGPUSampleCount.Samplecount1,
-                Props = 0
-            };
-            deviceTexture = SDL.CreateGPUTexture(Instance._gpuDevice, &createInfo);
-            textureData = (ImTextureData*)Marshal.AllocHGlobal(sizeof(ImTextureData));
-            textureData->Height = surface->H;
-            textureData->Width = surface->W;
-            textureData->Format = ImTextureFormat.Rgba32;
-            textureData->TexID = deviceTexture;
-            textureData->UsedRect.H = (ushort)surface->H;
-            textureData->UsedRect.W = (ushort)surface->W;
-            textureData->UsedRect.X = 0;
-            textureData->UsedRect.Y = 0;
-            textureData->WantDestroyNextFrame = 0;
-            lock (Instance.texturesToBind)
-                Instance.texturesToBind.Add(Tuple.Create((Pointer<SDLGPUTexture>)deviceTexture, (Pointer<SDLSurface>)surface));
+                var ioStream = SDL.IOFromMem(ptr, (nuint)data.Length);
+                surface = SDLImage.LoadTypedIO(ioStream, true, type);
+
+                if (surface->Format != SDLPixelFormat.Abgr8888)
+                    surface = SDL.ConvertSurface(surface, SDLPixelFormat.Abgr8888);
+                var createInfo = new SDLGPUTextureCreateInfo
+                {
+                    Width = (uint)surface->W,
+                    Height = (uint)surface->H,
+                    Format = SDLGPUTextureFormat.R8G8B8A8Unorm,
+                    Usage = (uint)SDLGPUTextureUsageFlags.Sampler,
+                    LayerCountOrDepth = 1,
+                    NumLevels = 1,
+                    Type = SDLGPUTextureType.Texturetype2D,
+                    SampleCount = SDLGPUSampleCount.Samplecount1,
+                    Props = 0
+                };
+                deviceTexture = SDL.CreateGPUTexture(Instance._gpuDevice, &createInfo);
+                textureData = (ImTextureData*)Marshal.AllocHGlobal(sizeof(ImTextureData));
+                textureData->Height = surface->H;
+                textureData->Width = surface->W;
+                textureData->Format = ImTextureFormat.Rgba32;
+                textureData->TexID = deviceTexture;
+                textureData->UsedRect.H = (ushort)surface->H;
+                textureData->UsedRect.W = (ushort)surface->W;
+                textureData->UsedRect.X = 0;
+                textureData->UsedRect.Y = 0;
+                textureData->WantDestroyNextFrame = 0;
+                lock (Instance.texturesToBind)
+                    Instance.texturesToBind.Add(Tuple.Create((Pointer<SDLGPUTexture>)deviceTexture, (Pointer<SDLSurface>)surface));
+            }
 
             Texture = new(textureData, deviceTexture);
         }

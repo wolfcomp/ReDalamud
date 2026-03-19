@@ -1,5 +1,4 @@
 using ReDalamud.Standalone.Types;
-using SDLEvent = Hexa.NET.SDL3.SDLEvent;
 
 namespace ReDalamud.Standalone;
 
@@ -33,6 +32,7 @@ public class Program
             StaticClassView.CurrentClassView = new ClassRenderer(MemoryRead.GetOpenedProcessAddress());
             _timer = new Timer(_ => MemoryRead.ScanAllProcessMemoryRegions(), null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
             Task.Run(ClassList.InitTypes);
+            Task.Run(EnumList.InitTypes);
         }
         else
         {
@@ -56,8 +56,6 @@ public class Program
             ImGuiSmrt.Style.Stack.Add((imGuiStyleVar, vec));
         }
 
-        SDLEvent sdlEvent = default;
-
         while (!ImGuiRenderer.Instance.ProcessExit())
         {
             ImGuiRenderer.Instance.NewFrame();
@@ -70,16 +68,17 @@ public class Program
             ConfigWindow.Draw();
             ImGuiRenderer.Instance.Render();
 
-            if (ShouldSaveOnFrame)
+            if (!ShouldSaveOnFrame)
             {
-                Config.Save();
-                ShouldSaveOnFrame = false;
+                continue;
             }
+
+            Config.Save();
+            ShouldSaveOnFrame = false;
         }
 
         ImGuiRenderer.Instance.Dispose();
         _timer?.Dispose();
-        IconLoader.Dispose();
         MemoryRead.Dispose();
         SDL.Quit();
     }

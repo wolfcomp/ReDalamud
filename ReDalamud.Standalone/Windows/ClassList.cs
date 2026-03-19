@@ -1,4 +1,4 @@
-﻿using ReDalamud.Standalone.Types;
+using ReDalamud.Standalone.Types;
 using System.Reflection;
 
 namespace ReDalamud.Standalone.Windows;
@@ -50,7 +50,7 @@ public class ClassList
 
     public static List<ClassRenderer> GetLoadedFFXIVClientStructTypes()
     {
-        var types = new List<Type>();
+        var types = new List<(Type Type, int Size)>();
         var assemblies = AppDomain.CurrentDomain.GetAssemblies();
         if(assemblies.All(t => t.ManifestModule.Name != "FFXIVClientStructs.dll"))
             assemblies = assemblies.Append(Assembly.LoadFrom("FFXIVClientStructs.dll")).ToArray();
@@ -61,14 +61,23 @@ public class ClassList
                 var nm = type.Namespace?.Split('.') ?? [];
                 if (nm.Length > 1 && nm[0] == "FFXIVClientStructs" && nm[1] is "FFXIV" && type is { IsValueType: true, IsPrimitive: false, IsEnum: false } && !type.Name.Contains("VirtualTable") && !type.Name.Contains("e__FixedBuffer"))
                 {
-                    types.Add(type);
+                    types.Add((type, type.StructLayoutAttribute!.Size));
                 }
             }
         }
 
-        return types.Select(t => new ClassRenderer
+        return types.Select(t => new ClassRenderer(t.Size)
         {
-            Name = t.Namespace![25..].Replace(".", "::") + "::" + t.Name,
+            Name = GetNameFromType(t.Type),
         }).OrderBy(t => t.Name).ToList();
+    }
+
+    private static string GetNameFromType(Type type)
+    {
+        if (type.DeclaringType != null)
+        {
+            return GetNameFromType(type.DeclaringType) + "::" + type.Name;
+        }
+        return type.Namespace![25..].Replace(".", "::") + "::" + type.Name;
     }
 }

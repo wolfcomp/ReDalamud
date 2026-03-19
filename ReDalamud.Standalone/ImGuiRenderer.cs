@@ -47,6 +47,8 @@ public unsafe partial class ImGuiRenderer
         ImGuiImplSDL3.SDLGPU3Shutdown();
         ImGui.DestroyContext();
 
+        IconLoader.Dispose();
+
         SDL.ReleaseWindowFromGPUDevice(_gpuDevice, _window);
         SDL.DestroyGPUDevice(_gpuDevice);
         SDL.DestroyWindow(_window);
