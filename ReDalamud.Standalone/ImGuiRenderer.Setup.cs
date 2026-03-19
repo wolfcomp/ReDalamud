@@ -1,23 +1,47 @@
-﻿namespace ReDalamud.Standalone;
+using Hexa.NET.ImGui.Backends.SDL3;
+using ImSDLWindow = Hexa.NET.ImGui.Backends.SDL3.SDLWindow;
+using SDLWindow = Hexa.NET.SDL3.SDLWindow;
+using SDLGPUDevice = Hexa.NET.SDL3.SDLGPUDevice;
+using ImSDLGPUDevice = Hexa.NET.ImGui.Backends.SDL3.SDLGPUDevice;
+
+namespace ReDalamud.Standalone;
 
 public partial class ImGuiRenderer
 {
-    public static unsafe ImGuiRenderer CreateWindowAndGlContext(string title, int width, int height, bool fullscreen = false,
-        bool highDpi = false)
+    public static unsafe void CreateWindow(ImUtf8String title, int width, int height, bool fullscreen = false)
     {
-        SDL.SetHint(SDL.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
-        SDL.Init(SDLInitFlags.Events | SDLInitFlags.Video);
+        const SDLInitFlags initFlags = SDLInitFlags.Events | SDLInitFlags.Video;
+        SDL.Init((uint)initFlags);
 
-        var windowFlags = SDLWindowFlags.Opengl | SDLWindowFlags.Resizable;
+        var windowFlags = SDLWindowFlags.Resizable | SDLWindowFlags.Hidden | SDLWindowFlags.HighPixelDensity;
         if (fullscreen)
             windowFlags |= SDLWindowFlags.Fullscreen;
-        if (highDpi)
-            windowFlags |= SDLWindowFlags.AllowHighdpi;
 
-        var window = SDL.CreateWindow(title, width, height, windowFlags);
+        float mainScale = SDL.GetDisplayContentScale(SDL.GetPrimaryDisplay());
+        SDLWindow* window = SDL.CreateWindow(title, (int)(width * mainScale), (int)(height * mainScale), (ulong)windowFlags);
 
-        var guiContext = ImGui.CreateContext();
-        ImGui.SetCurrentContext(guiContext);
+        if (window == null)
+        {
+            throw new NullReferenceException($"Error: SDL_CreateWindow(): {SDL.GetErrorS()}");            
+        }
+        
+        SDL.SetWindowPosition(window, (int)SDL.SDL_WINDOWPOS_CENTERED_MASK, (int)SDL.SDL_WINDOWPOS_CENTERED_MASK);
+        SDL.ShowWindow(window);
+
+        SDLGPUDevice* gpuDevice = SDL.CreateGPUDevice(
+            (uint)(SDLGPUShaderFormat.Spirv | SDLGPUShaderFormat.Dxil | SDLGPUShaderFormat.Metallib),
+            true, (byte*)null);
+
+        if (gpuDevice == null)
+        {
+            throw new NullReferenceException($"Error: SDL_CreateGPUDevice(): {SDL.GetErrorS()}");
+        }
+
+        SDL.SetGPUSwapchainParameters(gpuDevice, window,
+            SDLGPUSwapchainComposition.Sdr, SDLGPUPresentMode.Vsync);
+
+        var ctx = ImGui.CreateContext();
+        ImGui.SetCurrentContext(ctx);
 
         var io = ImGui.GetIO();
         io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
@@ -26,35 +50,40 @@ public partial class ImGuiRenderer
         io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable;
         io.ConfigViewportsNoAutoMerge = false;
         io.ConfigViewportsNoTaskBarIcon = false;
-            
-        var glContext = SDL.GLCreateContext(window);
+#if DEBUG
+        io.ConfigDebugIsDebuggerPresent = Debugger.IsAttached;
+        io.ConfigErrorRecovery = true;
+        io.ConfigErrorRecoveryEnableAssert = false;
+        io.ConfigErrorRecoveryEnableDebugLog = false;
+        io.ConfigErrorRecoveryEnableTooltip = true;
+#endif
+        
+        ImGui.StyleColorsDark();
+        var style = ImGui.GetStyle();
+        style.ScaleAllSizes(mainScale);
+        style.FontScaleDpi = mainScale;
+        io.ConfigDpiScaleFonts = true;
+        io.ConfigDpiScaleViewports = true;
 
-        ImGuiImplSDL3.SetCurrentContext(guiContext);
-        if (!ImGuiImplSDL3.SDL3InitForOpenGL(new SDLWindowPtr((Hexa.NET.ImGui.Backends.SDL3.SDLWindow*)window),
-                (void*)glContext.Handle))
+        if ((io.ConfigFlags & ImGuiConfigFlags.ViewportsEnable) != 0)
         {
-            SDL.Quit();
-            throw new Exception("ImGuiImplSDL3.SDL3InitForOpenGL failed");
+            style.WindowRounding = 0.0f;
+            style.Colors[(int)ImGuiCol.WindowBg].W = 1.0f;
         }
-        ImGuiImplOpenGL3.SetCurrentContext(guiContext);
-        if (!ImGuiImplOpenGL3.Init((byte*)null))
+
+        
+        ImGuiImplSDL3.SetCurrentContext(ctx);
+        ImGuiImplSDL3.InitForSDLGPU((ImSDLWindow*)window);
+
+        ImGuiImplSDLGPU3InitInfo initInfo = new()
         {
-            SDL.Quit();
-            throw new Exception("ImGuiImplOpenGL3.Init failed");
-        }
+            Device = (ImSDLGPUDevice*)gpuDevice,
+            ColorTargetFormat = (int)SDL.GetGPUSwapchainTextureFormat(gpuDevice, window),
+            MSAASamples = (int)SDLGPUSampleCount.Samplecount1
+        };
 
-        return new ImGuiRenderer(window, glContext);
-    }
+        ImGuiImplSDL3.SDLGPU3Init(ref initInfo);
 
-    public static ImTextureID LoadTexture(nint pixelData, int width, int height, GLPixelFormat format = GLPixelFormat.Rgba, GLInternalFormat internalFormat = GLInternalFormat.Rgba)
-    {
-        var textureId = GL.GenTexture();
-        GL.PixelStorei(GLPixelStoreParameter.UnpackAlignment, 1);
-        GL.BindTexture(GLTextureTarget.Texture2D, textureId);
-        GL.TexImage2D(GLTextureTarget.Texture2D, 0, internalFormat, width, height, 0, format, GLPixelType.UnsignedByte, pixelData);
-        GL.TexParameteri(GLTextureTarget.Texture2D, GLTextureParameterName.MagFilter, (int)GLTextureMagFilter.Linear);
-        GL.TexParameteri(GLTextureTarget.Texture2D, GLTextureParameterName.MinFilter, (int)GLTextureMinFilter.Linear);
-        GL.BindTexture(GLTextureTarget.Texture2D, 0);
-        return textureId;
+        Instance = new ImGuiRenderer(window, gpuDevice, new(0.45f, 0.55f, 0.60f, 1.00f));
     }
 }

@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
-		<TargetFramework>net8.0-windows10.0.17763.0</TargetFramework>
+		<TargetFramework>net10.0-windows10.0.17763.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -279,13 +279,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Hexa.NET.ImGui" Version="2.2.7" />
-		<PackageReference Include="Hexa.NET.ImGui.Backends" Version="1.0.15" />
-		<PackageReference Include="Hexa.NET.ImGui.Backends.SDL3" Version="1.0.15" />
+		<PackageReference Include="Hexa.NET.ImGui" Version="2.2.9" />
+		<PackageReference Include="Hexa.NET.ImGui.Backends" Version="1.0.18" />
+		<PackageReference Include="Hexa.NET.ImGui.Backends.SDL3" Version="1.0.18" />
 		<PackageReference Include="Hexa.NET.OpenGL3" Version="1.1.0" />
-		<PackageReference Include="Hexa.NET.SDL3" Version="1.2.14" />
+		<PackageReference Include="Hexa.NET.SDL3" Version="1.2.17" />
 		<PackageReference Include="Hexa.NET.SDL3.Image" Version="1.0.0" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.5" />
 	</ItemGroup>
 
 	<ItemGroup>

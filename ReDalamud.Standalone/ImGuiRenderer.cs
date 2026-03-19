@@ -1,69 +1,54 @@
-﻿using SDLWindow = Hexa.NET.SDL3.SDLWindow;
+using Hexa.NET.ImGui.Backends.SDL3;
+using ImSDLEvent = Hexa.NET.ImGui.Backends.SDL3.SDLEvent;
+using SDLWindow = Hexa.NET.SDL3.SDLWindow;
+using SDLEvent = Hexa.NET.SDL3.SDLEvent;
+using SDLGPUDevice = Hexa.NET.SDL3.SDLGPUDevice;
 
 namespace ReDalamud.Standalone;
 
 public unsafe partial class ImGuiRenderer
 {
-    public static GL GL { get; private set; }
+    public static ImGuiRenderer Instance;
+
     private ImTextureID _fontTextureId;
     private float _time;
     private SDLWindow* _window;
-    public uint WindowId => _window != null ? SDL.GetWindowID(_window) : 0;
+    private SDLGPUDevice* _gpuDevice;
+    private Vector4 _clearColor;
 
-    public ImGuiRenderer(SDLWindow* window, SDLGLContext glContext)
+    public ImGuiRenderer(SDLWindow* window, SDLGPUDevice* gpuDevice, Vector4 clearColor)
     {
-        GL = new GL(new BindingContext(window, glContext));
-        // RebuildFontAtlas();
+        _window = window;
+        _gpuDevice = gpuDevice;
+        _clearColor = clearColor;
     }
 
-    // unsafe void RebuildFontAtlas()
-    // {
-    //     var fonts = ImGui.GetIO().Fonts;
-    //     fonts.AddFontDefault();
-    //     fonts.GetTexDataAsRGBA32(out byte* pixelData, out int width, out int height, out int _);
-    //
-    //     _fontTextureId = LoadTexture((nint)pixelData, width, height);
-    //
-    //     fonts.TexID = _fontTextureId;
-    //     fonts.ClearTexData();
-    // }
+    public bool ShouldRender() => ((SDLWindowFlags)SDL.GetWindowFlags(_window) & SDLWindowFlags.Minimized) != 0;
 
-    public void Render()
+    public bool ProcessExit()
     {
-        ImGui.Render();
-        ImGui.EndFrame();
-
-        GL.MakeCurrent();
-        ImGuiImplOpenGL3.RenderDrawData(ImGui.GetDrawData());
-
-        if (ImGui.GetIO().ConfigFlags.HasFlag(ImGuiConfigFlags.ViewportsEnable))
+        SDLEvent e = default;
+        while (SDL.PollEvent(ref e))
         {
-            ImGui.UpdatePlatformWindows();
-            ImGui.RenderPlatformWindowsDefault();
+            ImGuiImplSDL3.ProcessEvent((ImSDLEvent*)&e);
+            var type = (SDLEventType)e.Type;
+            if (type == SDLEventType.Quit || (type == SDLEventType.WindowCloseRequested &&
+                                              e.Window.WindowID == SDL.GetWindowID(_window)))
+                return true;
         }
 
-        GL.MakeCurrent();
-
-        GL.SwapBuffers();
-    }
-
-    public void Clear(float r, float g, float b, float a)
-    {
-        GL.MakeCurrent();
-        GL.ClearColor(r, g, b, a);
-        GL.Clear(GLClearBufferMask.ColorBufferBit);
-    }
-
-    public void NewFrame()
-    {
-        ImGuiImplOpenGL3.NewFrame();
-        ImGuiImplSDL3.SDL3NewFrame();
-        ImGui.NewFrame();
+        return false;
     }
 
     public void Dispose()
     {
-        GL.Dispose();
+        SDL.WaitForGPUIdle(_gpuDevice);
+        ImGuiImplSDL3.Shutdown();
+        ImGuiImplSDL3.SDLGPU3Shutdown();
+        ImGui.DestroyContext();
+
+        SDL.ReleaseWindowFromGPUDevice(_gpuDevice, _window);
+        SDL.DestroyGPUDevice(_gpuDevice);
         SDL.DestroyWindow(_window);
     }
 }

@@ -1,11 +1,10 @@
-﻿using ReDalamud.Standalone.Types;
+using ReDalamud.Standalone.Types;
 using SDLEvent = Hexa.NET.SDL3.SDLEvent;
 
 namespace ReDalamud.Standalone;
 
 public class Program
 {
-    private static ImGuiRenderer _renderer = null!;
     private static Timer? _timer;
     public static Random Rand = new();
     public static bool ShouldSaveOnFrame = false;
@@ -14,7 +13,13 @@ public class Program
         var loc = Directory.GetCurrentDirectory();
         DockWindow.IsFirstSetup = !File.Exists(Path.Combine(loc, "imgui.ini"));
 
-        _renderer = ImGuiRenderer.CreateWindowAndGlContext("ReDalamud.Standalone", 800, 600);
+        try
+        {
+            ImGuiRenderer.CreateWindow("ReDalamud.Standalone", 800, 600);
+        }
+        catch (Exception e) {
+            Console.Error.WriteLine(e);
+        }
         // Config.ImGuiStyle = ImGui.GetStyle();
         Config.Load();
 
@@ -53,22 +58,9 @@ public class Program
 
         SDLEvent sdlEvent = default;
 
-        while (!quit)
+        while (!ImGuiRenderer.Instance.ProcessExit())
         {
-            SDL.PumpEvents();
-            while (SDL.PollEvent(ref sdlEvent))
-            {
-                ImGuiImplSDL3.SDL3ProcessEvent((Hexa.NET.ImGui.Backends.SDL3.SDLEvent*)&sdlEvent);
-                quit = (SDLEventType)sdlEvent.Type switch
-                {
-                    SDLEventType.Quit or SDLEventType.Terminating => true,
-                    SDLEventType.WindowCloseRequested => sdlEvent.Window.WindowID == _renderer.WindowId,
-                    _ => quit
-                };
-            }
-
-            _renderer.Clear(0.05f, 0.05f, 0.05f, 1f);
-            _renderer.NewFrame();
+            ImGuiRenderer.Instance.NewFrame();
             MainMenuBar.Draw();
             DockWindow.Draw();
             ToolBar.Draw();
@@ -76,7 +68,7 @@ public class Program
             EnumList.Draw();
             StaticClassView.Draw();
             ConfigWindow.Draw();
-            _renderer.Render();
+            ImGuiRenderer.Instance.Render();
 
             if (ShouldSaveOnFrame)
             {
@@ -85,10 +77,7 @@ public class Program
             }
         }
 
-        ImGuiImplOpenGL3.Shutdown();
-        ImGuiImplSDL3.SDL3Shutdown();
-        ImGui.DestroyContext();
-        _renderer.Dispose();
+        ImGuiRenderer.Instance.Dispose();
         _timer?.Dispose();
         IconLoader.Dispose();
         MemoryRead.Dispose();

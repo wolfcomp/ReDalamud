@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Text;
 
 namespace ReDalamud.Standalone.Utils;
@@ -13,7 +13,7 @@ public static class Util
         return reader.ReadToEnd();
     }
 
-    public static byte[]? GetResourceBytes(string path)
+    public static ReadOnlySpan<byte> GetResourceBytes(string path)
     {
         using var stream = GetResourceStream(path);
         if (stream == null) return null;

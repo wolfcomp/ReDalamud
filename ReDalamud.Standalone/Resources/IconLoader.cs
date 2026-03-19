@@ -1,7 +1,3 @@
-﻿using Hexa.NET.SDL3;
-using ReDalamud.Standalone.Utils;
-using System.Runtime.InteropServices;
-
 namespace ReDalamud.Standalone.Resources;
 
 public enum Icon16 : uint
@@ -149,12 +145,12 @@ public class IconLoader
         Icon32
     }
 
-    private static Dictionary<ImTextureID, (IconType Type, uint IconId, nint Handle)> _textureDictionary = new();
+    private static readonly Dictionary<ImGuiRenderer.TextureWrap, (IconType Type, uint IconId)> TextureDictionary = [];
 
     private static bool IsUpperOrNumber(char c) => char.IsUpper(c) || char.IsNumber(c);
     private static bool IsCurrentAndNotLastUpperOrNumber(string s, int i) => IsUpperOrNumber(s[i]) && !(i > 0 && IsUpperOrNumber(s[i - 1]));
 
-    public static byte[]? GetIconBytes(Icon16 icon)
+    public static ReadOnlySpan<byte> GetIconBytes(Icon16 icon)
     {
         var str = icon.ToString();
         switch (icon)
@@ -178,7 +174,7 @@ public class IconLoader
         return GetResourceBytes($"ReDalamud.Standalone.Resources.Icons.B16x16_{str}.png");
     }
 
-    public static byte[]? GetIconBytes(Icon32 icon)
+    public static ReadOnlySpan<byte> GetIconBytes(Icon32 icon)
     {
         var str = icon.ToString();
         if (icon == Icon32.Glasses)
@@ -193,54 +189,31 @@ public class IconLoader
         return GetResourceBytes($"ReDalamud.Standalone.Resources.Icons.B32x32_{str}.png");
     }
 
-    public static unsafe ImTextureID GetIconTextureId(Icon16 icon)
+    public static unsafe ImTextureRef GetIconTextureId(Icon16 icon)
     {
-        var key = _textureDictionary.Where(t => t.Value.Type == IconType.Icon16).FirstOrDefault(t => t.Value.IconId == (uint)icon).Key;
-        if (!key.IsNull)
-            return key;
-        var bytes = GetIconBytes(icon);
-        if (bytes == null)
-            return 0;
-        SDLSurface* surf;
-        fixed (byte* ptr = bytes)
-        {
-            surf = SDLImage.LoadIO(SDL.IOFromMem(ptr, (nuint)bytes.Length), true);
-        }
-        if (surf == null)
-            throw new Exception("Failed to load image.");
-
-        var textureId = ImGuiRenderer.LoadTexture((nint)surf->Pixels, surf->W, surf->H);
-        _textureDictionary[textureId] = (IconType.Icon16, (uint)icon, (nint)surf);
-        return textureId;
+        var key = TextureDictionary.Where(t => t.Value.Type == IconType.Icon16).FirstOrDefault(t => t.Value.IconId == (uint)icon).Key;
+        if (key != null)
+            return key.Texture;
+        var textureWrap = new ImGuiRenderer.TextureWrap(GetIconBytes(icon));
+        TextureDictionary.Add(textureWrap, (IconType.Icon16, (uint)icon));
+        return textureWrap.Texture;
     }
 
-    public static unsafe ImTextureID GetIconTextureId(Icon32 icon)
+    public static unsafe ImTextureRef GetIconTextureId(Icon32 icon)
     {
-        var key = _textureDictionary.Where(t => t.Value.Type == IconType.Icon32).FirstOrDefault(t => t.Value.IconId == (uint)icon).Key;
-        if (!key.IsNull)
-            return key;
-        var bytes = GetIconBytes(icon);
-        if (bytes == null)
-            return 0;
-        SDLSurface* surf;
-        fixed (byte* ptr = bytes)
-        {
-            surf = SDLImage.LoadIO(SDL.IOFromMem(ptr, (nuint)bytes.Length), true);
-        }
-        if (surf == null)
-            throw new Exception("Failed to load image.");
-
-        var textureId = ImGuiRenderer.LoadTexture((nint)surf->Pixels, surf->W, surf->H);
-        _textureDictionary[textureId] = (IconType.Icon32, (uint)icon, (nint)surf);
-        return textureId;
+        var key = TextureDictionary.Where(t => t.Value.Type == IconType.Icon32).FirstOrDefault(t => t.Value.IconId == (uint)icon).Key;
+        if (key != null)
+            return key.Texture;
+        var textureWrap = new ImGuiRenderer.TextureWrap(GetIconBytes(icon));
+        TextureDictionary.Add(textureWrap, (IconType.Icon32, (uint)icon));
+        return textureWrap.Texture;
     }
 
     public static unsafe void Dispose()
     {
-        foreach (var (textureId, (_, _, handle)) in _textureDictionary)
+        foreach (var (textureWrap, (_, _)) in TextureDictionary)
         {
-            ImGuiRenderer.GL.DeleteTexture((uint)textureId.Handle);
-            SDL.DestroySurface((SDLSurface*)handle);
+            textureWrap.Dispose();
         }
     }
 }
