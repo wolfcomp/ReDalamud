@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 
 namespace ReDalamud.Standalone.Types;
 public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
@@ -8,6 +8,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
     public int Size => Renderers.Sum(t => t.Size);
     public List<IRenderer> Renderers = new();
     public bool IsCollapsed;
+    // ReSharper disable once MemberInitializerValueIgnored
     public nint Address = (nint)0x140000000;
     public string Name = GenerateRandomName();
     public string OffsetText;
@@ -18,18 +19,17 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
     private int _selectedIndex = -1;
     private bool _insertingCustomBytes;
 
-    public ClassRenderer()
+    public ClassRenderer(int size = 0x40)
     {
         Address = MemoryRead.OpenedProcess.MainModule!.BaseAddress;
         OffsetText = Address.ToString("X");
-        // Maybe make the default size configurable?
-        for (var i = 0; i < 0x40; i += 8)
+        for (var i = 0; i < size; i += 8)
         {
             Renderers.Add(new Unknown8Renderer());
         }
     }
 
-    public ClassRenderer(nint address) : this()
+    public ClassRenderer(nint address, int size = 0x40) : this(size)
     {
         Address = address;
         OffsetText = address.ToString("X");

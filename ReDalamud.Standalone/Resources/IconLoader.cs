@@ -194,7 +194,7 @@ public class IconLoader
         var key = TextureDictionary.Where(t => t.Value.Type == IconType.Icon16).FirstOrDefault(t => t.Value.IconId == (uint)icon).Key;
         if (key != null)
             return key.Texture;
-        var textureWrap = new ImGuiRenderer.TextureWrap(GetIconBytes(icon));
+        var textureWrap = new ImGuiRenderer.TextureWrap(GetIconBytes(icon), "PNG");
         TextureDictionary.Add(textureWrap, (IconType.Icon16, (uint)icon));
         return textureWrap.Texture;
     }
@@ -204,7 +204,7 @@ public class IconLoader
         var key = TextureDictionary.Where(t => t.Value.Type == IconType.Icon32).FirstOrDefault(t => t.Value.IconId == (uint)icon).Key;
         if (key != null)
             return key.Texture;
-        var textureWrap = new ImGuiRenderer.TextureWrap(GetIconBytes(icon));
+        var textureWrap = new ImGuiRenderer.TextureWrap(GetIconBytes(icon), "PNG");
         TextureDictionary.Add(textureWrap, (IconType.Icon32, (uint)icon));
         return textureWrap.Texture;
     }

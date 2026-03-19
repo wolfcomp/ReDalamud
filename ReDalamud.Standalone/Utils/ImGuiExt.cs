@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using FFXIVClientStructs.Interop;
 using System.Text;
 
@@ -369,60 +369,9 @@ public static partial class ImGuiExt
 
     public static object GetStyleObject(ImGuiStyleVar imGuiStyleVar)
     {
-        return (object?)GetStyleFloat(imGuiStyleVar) ?? GetStyleVector2(imGuiStyleVar) ?? throw new ArgumentOutOfRangeException(nameof(imGuiStyleVar), imGuiStyleVar, null);
-    }
-
-    public static float? GetStyleFloat(ImGuiStyleVar imGuiStyleVar)
-    {
-        var style = ImGui.GetStyle();
-        return imGuiStyleVar switch
-        {
-            ImGuiStyleVar.Alpha => style.Alpha,
-            ImGuiStyleVar.DisabledAlpha => style.DisabledAlpha,
-            ImGuiStyleVar.WindowRounding => style.WindowRounding,
-            ImGuiStyleVar.WindowBorderSize => style.WindowBorderSize,
-            ImGuiStyleVar.WindowMinSize => style.GrabMinSize,
-            ImGuiStyleVar.ChildBorderSize => style.ChildBorderSize,
-            ImGuiStyleVar.ChildRounding => style.FrameRounding,
-            ImGuiStyleVar.PopupRounding => style.PopupRounding,
-            ImGuiStyleVar.PopupBorderSize => style.PopupBorderSize,
-            ImGuiStyleVar.FrameRounding => style.FrameRounding,
-            ImGuiStyleVar.FrameBorderSize => style.FrameBorderSize,
-            ImGuiStyleVar.IndentSpacing => style.IndentSpacing,
-            ImGuiStyleVar.ScrollbarSize => style.ScrollbarSize,
-            ImGuiStyleVar.ScrollbarRounding => style.ScrollbarRounding,
-            ImGuiStyleVar.GrabMinSize => style.GrabMinSize,
-            ImGuiStyleVar.GrabRounding => style.GrabRounding,
-            ImGuiStyleVar.TabRounding => style.TabRounding,
-            ImGuiStyleVar.SeparatorTextBorderSize => style.SeparatorTextBorderSize,
-            ImGuiStyleVar.DockingSeparatorSize => style.DockingSeparatorSize,
-            ImGuiStyleVar.ImageBorderSize => style.ImageBorderSize,
-            ImGuiStyleVar.TabBorderSize => style.TabBorderSize,
-            ImGuiStyleVar.TabBarBorderSize => style.TabBarBorderSize,
-            ImGuiStyleVar.TabBarOverlineSize => style.TabBarOverlineSize,
-            ImGuiStyleVar.TableAngledHeadersAngle => style.TableAngledHeadersAngle,
-            _ => null
-        };
-    }
-
-    public static Vector2? GetStyleVector2(ImGuiStyleVar imGuiStyleVar)
-    {
-        var style = ImGui.GetStyle();
-        return imGuiStyleVar switch
-        {
-            ImGuiStyleVar.WindowPadding => style.WindowPadding,
-            ImGuiStyleVar.WindowTitleAlign => style.WindowTitleAlign,
-            ImGuiStyleVar.FramePadding => style.FramePadding,
-            ImGuiStyleVar.ItemSpacing => style.ItemSpacing,
-            ImGuiStyleVar.ItemInnerSpacing => style.ItemInnerSpacing,
-            ImGuiStyleVar.CellPadding => style.CellPadding,
-            ImGuiStyleVar.ButtonTextAlign => style.ButtonTextAlign,
-            ImGuiStyleVar.SelectableTextAlign => style.SelectableTextAlign,
-            ImGuiStyleVar.SeparatorTextAlign => style.SeparatorTextAlign,
-            ImGuiStyleVar.SeparatorTextPadding => style.SeparatorTextPadding,
-            ImGuiStyleVar.TableAngledHeadersTextAlign => style.TableAngledHeadersTextAlign,
-            _ => null
-        };
+        var name = Enum.GetName(imGuiStyleVar)!;
+        var style = ImGui.GetStyle();        
+        return style.GetType().GetProperty(name)?.GetValue(style) ?? throw new ArgumentOutOfRangeException(nameof(imGuiStyleVar), imGuiStyleVar, null);
     }
 }
 
