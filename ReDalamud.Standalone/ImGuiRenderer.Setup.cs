@@ -37,6 +37,11 @@ public partial class ImGuiRenderer
             throw new NullReferenceException($"Error: SDL_CreateGPUDevice(): {SDL.GetErrorS()}");
         }
 
+        if (!SDL.ClaimWindowForGPUDevice(gpuDevice, window))
+        {
+            throw new NullReferenceException($"Error: SDL_ClaimWindowForGPUDevice(): {SDL.GetErrorS()}");
+        }
+
         SDL.SetGPUSwapchainParameters(gpuDevice, window,
             SDLGPUSwapchainComposition.Sdr, SDLGPUPresentMode.Vsync);
 
