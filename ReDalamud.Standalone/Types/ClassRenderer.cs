@@ -17,6 +17,8 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
     private bool _addingCustomBytes;
     private int _addingCustomBytesSize;
     private int _selectedIndex = -1;
+    private int _hoveredIndex = -1;
+    private int _lastHoveredIndex = -1;
     private bool _insertingCustomBytes;
 
     public ClassRenderer(int size = 0x40)
@@ -48,7 +50,9 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
     {
         if (address == nint.Zero)
             address = Address;
-        
+
+        _hoveredIndex = -1;
+
         DrawHeader(address);
         if (IsCollapsed)
             return;
@@ -69,11 +73,18 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             var renderer = Renderers[index];
             if (index == _selectedIndex)
                 ImGui.PushStyleColor(ImGuiCol.ChildBg, (Vector4)Config.Styles.SelectedColor);
+            if (index == _lastHoveredIndex)
+                ImGui.PushStyleColor(ImGuiCol.ChildBg, (Vector4)Config.Styles.HoveredColor);
+            var originalSpacing = ImGui.GetStyle().ItemSpacing.Y;
+            ImGui.PushStyleVarY(ImGuiStyleVar.ItemSpacing, 0);
+            ImGui.PushStyleVarY(ImGuiStyleVar.ItemInnerSpacing, originalSpacing);
             ImGui.BeginChild($"ClassRendererRow###{Name}{address}{index}", childSize, ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar);
             renderer.DrawMemory(address + offset, offset);
             ImGui.EndChild();
-            var pos = ImGui.GetCursorPos();
+            ImGui.PopStyleVar(2);
             if (index == _selectedIndex)
+                ImGui.PopStyleColor();
+            if (index == _lastHoveredIndex)
                 ImGui.PopStyleColor();
             if (ImGui.IsItemHovered())
             {
@@ -83,6 +94,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
                     _selectedIndex = index;
                     ImGui.OpenPopup($"ClassPopup##{Name}{address}");
                 }
+                _hoveredIndex = index;
             }
 
             posY += renderer.GetHeight();
@@ -90,6 +102,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         }
         DrawPopUp(address);
         ImGui.EndChild();
+        _lastHoveredIndex = _hoveredIndex;
         return;
 
         bool isVisible(float y)
@@ -104,7 +117,10 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         var color = new ImGuiSmrt.Color();
         if (_selectedIndex == -1)
             color.Push(ImGuiCol.ChildBg, (Vector4)Config.Styles.SelectedColor);
-        ImGui.BeginChild($"ClassHeader##{Name}{address}", new Vector2(-1, ImGui.GetTextLineHeight()));
+        if (_lastHoveredIndex == -1)
+            color.Push(ImGuiCol.ChildBg, (Vector4)Config.Styles.HoveredColor);
+        var size = ImGui.GetTextLineHeight();
+        ImGui.BeginChild($"ClassHeader##{Name}{address}", new Vector2(-1, size), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar);
         style.Push(ImGuiStyleVar.FramePadding, new Vector2(0, 0));
         style.Push(ImGuiStyleVar.FrameRounding, 0);
         color.Push(ImGuiCol.Button, Config.Styles.BackgroundColor);
