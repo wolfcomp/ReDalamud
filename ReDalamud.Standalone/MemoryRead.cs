@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+using ReDalamud.Shared;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -8,9 +9,7 @@ public unsafe partial class MemoryRead
     public static nint OpenedProcessHandle = nint.Zero;
     public static Process OpenedProcess;
     public static string ProcessName;
-    public static List<SectionContainer> MemoryRegions = new();
-    public static List<(nint AddresStart, nint AddresEnd, int Index)> MemoryRegionsIndex = new();
-    public static Dictionary<nint, int> MemoryRegionsIndexMap = new();
+    public static FastLookupList<SectionContainer> MemoryRegions = new();
 
     [DllImport("kernel32.dll")]
     public static extern nint OpenProcess(uint dwDesiredAccess, bool bInheritHandle, int dwProcessId);
@@ -32,71 +31,60 @@ public unsafe partial class MemoryRead
         return result;
     }
 
-    public static int GetMemoryRegionIndex(nint address)
-    {
-        for (var i = 0; i < MemoryRegionsIndex.Count; i++)
-            if (address >= MemoryRegionsIndex[i].AddresStart && address < MemoryRegionsIndex[i].AddresEnd)
-                return i;
-        
-        return -1;
-    }
-
     public static string IsInRegion(nint address)
     {
-        if (!MemoryRegionsIndexMap.TryGetValue(address, out var i))
+        lock (MemoryRegions)
         {
-            i = GetMemoryRegionIndex(address);
-            MemoryRegionsIndexMap.Add(address, i);
+            var memoryRegion = MemoryRegions.FindFromNeedle(t => t.BaseAddress, (a,b) => (a.BaseAddress <= address && b.BaseAddress + b.Size >= address, a.BaseAddress + a.Size >= address), address);
+            if (memoryRegion.BaseAddress <= address && memoryRegion.BaseAddress + memoryRegion.Size >= address)
+                return !string.IsNullOrWhiteSpace(memoryRegion.Name) ? memoryRegion.Name : memoryRegion.Category.ToString();
+            return "";
         }
-        return i == -1 ? "" : !string.IsNullOrWhiteSpace(MemoryRegions[i].Name) ? MemoryRegions[i].Name : MemoryRegions[i].Category.ToString();
     }
 
     public static void ScanAllProcessMemoryRegions()
     {
-        MemoryRegions.Clear();
-        nint address = 0;
-        nint size = 0x1000;
-        while (VirtualQueryEx(OpenedProcessHandle, address, out var buffer) != 0 && address + size > address)
+        lock (MemoryRegions)
         {
-            if (buffer is { State: (uint)MemoryState.MEM_COMMIT, Type: (uint)MemoryType.MEM_PRIVATE })
+            MemoryRegions.Clear();
+            nint address = 0;
+            nint size = 0x1000;
+            while (VirtualQueryEx(OpenedProcessHandle, address, out var buffer) != 0 && address + size > address)
             {
-                var section = new SectionContainer { BaseAddress = address, Size = buffer.RegionSize };
-
-                if (((MemoryProtect)buffer.Protect & MemoryProtect.PAGE_EXECUTE) == MemoryProtect.PAGE_EXECUTE) section.Protection |= SectionProtection.Execute;
-                if (((MemoryProtect)buffer.Protect & MemoryProtect.PAGE_EXECUTE_READ) == MemoryProtect.PAGE_EXECUTE_READ) section.Protection |= SectionProtection.Execute | SectionProtection.Read;
-                if (((MemoryProtect)buffer.Protect & MemoryProtect.PAGE_EXECUTE_READWRITE) == MemoryProtect.PAGE_EXECUTE_READWRITE) section.Protection |= SectionProtection.Execute | SectionProtection.Read | SectionProtection.Write;
-                if (((MemoryProtect)buffer.Protect & MemoryProtect.PAGE_EXECUTE_WRITECOPY) == MemoryProtect.PAGE_EXECUTE_WRITECOPY) section.Protection |= SectionProtection.Execute | SectionProtection.Read | SectionProtection.CopyOnWrite;
-                if (((MemoryProtect)buffer.Protect & MemoryProtect.PAGE_READONLY) == MemoryProtect.PAGE_READONLY) section.Protection |= SectionProtection.Read;
-                if (((MemoryProtect)buffer.Protect & MemoryProtect.PAGE_READWRITE) == MemoryProtect.PAGE_READWRITE) section.Protection |= SectionProtection.Read | SectionProtection.Write;
-                if (((MemoryProtect)buffer.Protect & MemoryProtect.PAGE_WRITECOPY) == MemoryProtect.PAGE_WRITECOPY) section.Protection |= SectionProtection.Read | SectionProtection.CopyOnWrite;
-                if (((MemoryProtect)buffer.Protect & MemoryProtect.PAGE_GUARD) == MemoryProtect.PAGE_GUARD) section.Protection |= SectionProtection.Guard;
-
-                section.Type = (MemoryType)buffer.Type switch
+                if (buffer is { State: (uint)MemoryState.MEM_COMMIT, Type: (uint)MemoryType.MEM_PRIVATE })
                 {
-                    MemoryType.MEM_IMAGE => SectionType.Image,
-                    MemoryType.MEM_MAPPED => SectionType.Mapped,
-                    MemoryType.MEM_PRIVATE => SectionType.Private,
-                    _ => section.Type
-                };
+                    var section = new SectionContainer { BaseAddress = address, Size = buffer.RegionSize };
 
-                section.Category = section.Type == SectionType.Private ? SectionCategory.Heap : SectionCategory.Unknown;
+                    if (((MemoryProtect)buffer.Protect & MemoryProtect.PAGE_EXECUTE) == MemoryProtect.PAGE_EXECUTE) section.Protection |= SectionProtection.Execute;
+                    if (((MemoryProtect)buffer.Protect & MemoryProtect.PAGE_EXECUTE_READ) == MemoryProtect.PAGE_EXECUTE_READ) section.Protection |= SectionProtection.Execute | SectionProtection.Read;
+                    if (((MemoryProtect)buffer.Protect & MemoryProtect.PAGE_EXECUTE_READWRITE) == MemoryProtect.PAGE_EXECUTE_READWRITE) section.Protection |= SectionProtection.Execute | SectionProtection.Read | SectionProtection.Write;
+                    if (((MemoryProtect)buffer.Protect & MemoryProtect.PAGE_EXECUTE_WRITECOPY) == MemoryProtect.PAGE_EXECUTE_WRITECOPY) section.Protection |= SectionProtection.Execute | SectionProtection.Read | SectionProtection.CopyOnWrite;
+                    if (((MemoryProtect)buffer.Protect & MemoryProtect.PAGE_READONLY) == MemoryProtect.PAGE_READONLY) section.Protection |= SectionProtection.Read;
+                    if (((MemoryProtect)buffer.Protect & MemoryProtect.PAGE_READWRITE) == MemoryProtect.PAGE_READWRITE) section.Protection |= SectionProtection.Read | SectionProtection.Write;
+                    if (((MemoryProtect)buffer.Protect & MemoryProtect.PAGE_WRITECOPY) == MemoryProtect.PAGE_WRITECOPY) section.Protection |= SectionProtection.Read | SectionProtection.CopyOnWrite;
+                    if (((MemoryProtect)buffer.Protect & MemoryProtect.PAGE_GUARD) == MemoryProtect.PAGE_GUARD) section.Protection |= SectionProtection.Guard;
 
-                MemoryRegions.Add(section);
+                    section.Type = (MemoryType)buffer.Type switch
+                    {
+                        MemoryType.MEM_IMAGE => SectionType.Image,
+                        MemoryType.MEM_MAPPED => SectionType.Mapped,
+                        MemoryType.MEM_PRIVATE => SectionType.Private,
+                        _ => section.Type
+                    };
+
+                    section.Category = section.Type == SectionType.Private ? SectionCategory.Heap : SectionCategory.Unknown;
+
+                    MemoryRegions.Add(section);
+                }
+                size = buffer.RegionSize;
+                address += size;
             }
-            size = buffer.RegionSize;
-            address += size;
-        }
-
-        MapSectionContainers();
-
-        MemoryRegionsIndex.Clear();
-        for (var i = 0; i < MemoryRegions.Count; i++)
-        {
-            MemoryRegionsIndex.Add((MemoryRegions[i].BaseAddress, MemoryRegions[i].BaseAddress + MemoryRegions[i].Size, i));
+            MemoryRegions.Sort((a, b) => a.BaseAddress.CompareTo(b.BaseAddress));
+            MapSectionContainers();
         }
     }
 
-    public static void MapSectionContainers()
+    private static void MapSectionContainers()
     {
         var baseAddress = GetOpenedProcessAddress();
 
@@ -138,12 +126,7 @@ public unsafe partial class MemoryRead
         }
     }
 
-    public static nint OpenProcess(string processName)
-    {
-        return OpenProcess(processName, ProcessAccessFlags.PROCESS_VM_ALL);
-    }
-
-    public static nint OpenProcess(string processName, ProcessAccessFlags flags)
+    public static nint OpenProcess(string processName, ProcessAccessFlags flags = ProcessAccessFlags.PROCESS_VM_ALL)
     {
         var process = Process.GetProcessesByName(processName).FirstOrDefault();
 

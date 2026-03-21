@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
@@ -290,6 +290,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\FFXIVClientStructs\FFXIVClientStructs\FFXIVClientStructs.csproj" />
+		<ProjectReference Include="..\ReDalamud.Shared\ReDalamud.Shared.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
