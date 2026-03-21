@@ -1,33 +1,23 @@
+using Windows.Foundation.Collections;
+
 namespace ReDalamud.Standalone.Types;
-public class Unknown2Renderer : IUnknownRenderer
+public class Unknown2Renderer : UnknownBaseRenderer
 {
-    public bool HasName => false;
-    public bool HasCode => false;
-    public int Size => 2;
-    public string FieldName { get; set; } = "";
+    public override bool HasName => false;
+    public override bool HasCode => false;
+    public override int Size => 2;
+    public override string FieldName { get; set; } = "";
     private float _height = -1;
     private byte[] _bytes = [];
-    public void DrawMemory(nint address, int offset)
+    public override void DrawMemory(nint address, int offset)
     {
         var bytes = MemoryRead.ReadBytes(address, Size);
         _bytes = bytes;
-        using var style = ImGuiSmrt.PushTextColor(Config.Styles.OffsetColor);
-        ImGui.Text($"{offset:X4}");
-        ImGui.SameLine();
-        style.PushTextColor(Config.Styles.AddressColor);
-        ImGui.TextUnformatted(address.ToString("X8"));
-        ImGui.SameLine();
-        style.PushTextColor(Config.Styles.TextColor);
-        ImGui.TextUnformatted(MemoryRead.CharFromBytes(bytes));
-        ImGui.SameLine();
-        style.PushTextColor(Config.Styles.HexValueColor);
-        ImGui.TextUnformatted(string.Join(' ', bytes.Select(t => t.ToString("X2"))));
-        ImGui.SameLine();
-        style.PushTextColor(Config.Styles.CommentColor);
-        ImGui.TextUnformatted("//");
+        
+        DrawLine(offset, address, bytes);
     }
 
-    public void DrawToolTip()
+    public override void DrawToolTip()
     {
         var valueInt = BitConverter.ToInt16(_bytes);
         var valueUInt = BitConverter.ToUInt16(_bytes);
@@ -38,12 +28,12 @@ public class Unknown2Renderer : IUnknownRenderer
         ImGui.EndTooltip();
     }
 
-    public void DrawCSharpCode()
+    public override void DrawCSharpCode()
     {
 
     }
 
-    public float GetHeight()
+    public override float GetHeight()
     {
         if (_height > 0)
             return _height;

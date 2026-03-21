@@ -1,15 +1,15 @@
 namespace ReDalamud.Standalone.Types;
 
-public class Unknown8Renderer : IUnknownRenderer
+public class Unknown8Renderer : UnknownBaseRenderer
 {
-    public bool HasName => true;
-    public bool HasCode => false;
-    public int Size => 8;
-    public string FieldName { get; set; } = "";
+    public override bool HasName => true;
+    public override bool HasCode => false;
+    public override int Size => 8;
+    public override string FieldName { get; set; } = "";
     private float _height = -1;
     private byte[] _bytes = [];
 
-    public void DrawMemory(nint address, int offset)
+    public override void DrawMemory(nint address, int offset)
     {
         if (string.IsNullOrWhiteSpace(FieldName))
             FieldName = $"field_{offset:X}";
@@ -24,50 +24,38 @@ public class Unknown8Renderer : IUnknownRenderer
             valueHex = "0x" + valueHex;
         }
 
-        using var style = ImGuiSmrt.PushTextColor(Config.Styles.OffsetColor);
-        ImGui.Text($"{offset:X4}");
-        ImGui.SameLine();
-        style.PushTextColor(Config.Styles.AddressColor);
-        ImGui.TextUnformatted(address.ToString("X16"));
-        ImGui.SameLine();
-        style.PushTextColor(Config.Styles.TextColor);
-        ImGui.TextUnformatted(MemoryRead.CharFromBytes(bytes));
-        ImGui.SameLine();
-        if (Config.Global.ShowNameOnUnknown)
+        DrawLine(offset, address, bytes, $"{stringFloat} {valueInt64} {valueHex}");
+
+        string? pointsTo;
+        var vtable = ClientStructsData?.VtableLookup.FindFromNeedle(t => t.Vtable.Ea, (a, b) => (a.Vtable.Ea == (ulong)valueInt64 || b.Vtable.Ea == (ulong)valueInt64, a.Vtable.Ea == (ulong)valueInt64), (ulong)valueInt64);
+        if (vtable != null && vtable.Vtable.Ea == (ulong)valueInt64)
         {
-            style.PushTextColor(Config.Styles.NameColor);
-            ImGui.TextUnformatted(FieldName);
-            ImGui.SameLine();
+            pointsTo = vtable.ClassName;
+            if (vtable.Index != 0)
+                pointsTo += $"_{(string.IsNullOrWhiteSpace(vtable.Vtable.Base) ? vtable.Index : vtable.Vtable.Base)}";
         }
-        style.PushTextColor(Config.Styles.HexValueColor);
-        ImGui.TextUnformatted(string.Join(' ', bytes.Select(t => t.ToString("X2"))));
-        ImGui.SameLine();
-        style.PushTextColor(Config.Styles.CommentColor);
-        ImGui.TextUnformatted("//");
-        ImGui.SameLine();
-        style.PushTextColor(Config.Styles.ValueColor);
-        ImGui.TextUnformatted($"{stringFloat} {valueInt64} {valueHex}");
-        var pointsTo = MemoryRead.IsInRegion((nint)valueInt64);
+        else
+            pointsTo = MemoryRead.IsInRegion((nint)valueInt64);
         if (string.IsNullOrWhiteSpace(pointsTo))
             return;
         ImGui.SameLine();
-        style.PushTextColor(Config.Styles.OffsetColor);
+        ImGui.PushStyleColor(ImGuiCol.Text, Config.Styles.OffsetColor.InternalValue);
         ImGui.TextUnformatted($"-> <{pointsTo.ToUpper()}>{valueHex[2..]}");
     }
 
-    public void DrawCSharpCode()
+    public override void DrawCSharpCode()
     {
 
     }
 
-    public float GetHeight()
+    public override float GetHeight()
     {
         if (_height > 0)
             return _height;
         return _height = ImGui.GetTextLineHeight() + ImGui.GetStyle().ItemSpacing.Y;
     }
 
-    public void DrawToolTip()
+    public override void DrawToolTip()
     {
         using var _ = ImGuiSmrt.PushDefaultColor();
         var valueInt64 = BitConverter.ToInt64(_bytes);
