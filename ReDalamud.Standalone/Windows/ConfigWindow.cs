@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace ReDalamud.Standalone.Windows;
 public class ConfigWindow
 {
@@ -59,10 +61,10 @@ public class ConfigWindow
         ImGui.End();
     }
 
-    private static void DrawColorPickerOption(string name, ref Color color)
+    private static unsafe void DrawColorPickerOption(ImUtf8String name, ref Color color)
     {
-        var internalColor = (Vector4)color;
-        if (ImGui.ColorEdit4(name, ref internalColor, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreviewHalf | ImGuiColorEditFlags.DisplayRgb))
-            color = internalColor;
+        var internalColor = (float*)Unsafe.AsPointer(ref color.InternalValue);
+        if (ImGui.ColorEdit4(name, internalColor, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreviewHalf | ImGuiColorEditFlags.DisplayRgb))
+            color.InternalValue = Unsafe.AsRef<Vector4>(internalColor);
     }
 }
