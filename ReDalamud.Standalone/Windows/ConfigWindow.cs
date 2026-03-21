@@ -1,10 +1,10 @@
-﻿namespace ReDalamud.Standalone.Windows;
+namespace ReDalamud.Standalone.Windows;
 public class ConfigWindow
 {
     public static unsafe void Draw()
     {
         if(!MainMenuBar.StyleWindowOpened) return;
-        ImGui.Begin("ConfigWindow", ref MainMenuBar.StyleWindowOpened, ImGuiWindowFlags.AlwaysAutoResize);
+        ImGui.Begin("ConfigWindow", ref MainMenuBar.StyleWindowOpened, ImGuiWindowFlags.AlwaysVerticalScrollbar);
 
         if (ImGui.BeginTabBar("StyleTabBar"))
         {
