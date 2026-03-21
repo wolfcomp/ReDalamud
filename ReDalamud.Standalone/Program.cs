@@ -19,7 +19,6 @@ public class Program
         catch (Exception e) {
             Console.Error.WriteLine(e);
         }
-        // Config.ImGuiStyle = ImGui.GetStyle();
         Config.Load();
 
         var quit = false;

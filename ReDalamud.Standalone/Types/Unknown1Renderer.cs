@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ReDalamud.Standalone.Types;
+﻿namespace ReDalamud.Standalone.Types;
 public class Unknown1Renderer : IUnknownRenderer
 {
     public bool HasName => false;

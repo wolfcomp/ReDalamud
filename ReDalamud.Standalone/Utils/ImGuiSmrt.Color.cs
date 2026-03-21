@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ReDalamud.Standalone.Utils;
+﻿namespace ReDalamud.Standalone.Utils;
 public partial class ImGuiSmrt
 {
     public class Color : IDisposable
