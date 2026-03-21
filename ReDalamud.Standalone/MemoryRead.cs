@@ -2,6 +2,7 @@ using ReDalamud.Shared;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using NoAlloq;
 
 namespace ReDalamud.Standalone;
 public unsafe partial class MemoryRead
@@ -175,7 +176,7 @@ public unsafe partial class MemoryRead
         return read;
     }
 
-    public static string CharFromBytes(byte[] bytes) => string.Join("", bytes.Select(t => t < 20 ? '.' : (char)t));
+    public static string CharFromBytes(Span<byte> bytes) => string.Join("", bytes.Select(t => t < 20 ? '.' : (char)t).ToArray());
 
     public static string Utf8FromBytePtr(byte* ptr)
     {
