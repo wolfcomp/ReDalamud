@@ -8,6 +8,7 @@ public class ClassList
 {
     // ReSharper disable once FieldCanBeMadeReadOnly.Local
     private static List<ClassRenderer> _loadedFfxivClientStructTypes = [];
+    private static List<int> _hasInstances = [];
     private static bool _processingXivTypes = true;
     private static float _spinner = 0;
 
@@ -44,10 +45,23 @@ public class ClassList
                 if (i < 0)
                     continue;
                 var type = _loadedFfxivClientStructTypes[i];
-                if (type.DrawName(StaticClassView.CurrentClassView == type))
+                var size = ImGui.CalcTextSize(type.Name);
+                var cursorPos = ImGui.GetCursorPos();
+                if (ImGui.Selectable(type.Name, StaticClassView.CurrentClassView == type, ImGuiSelectableFlags.SpanAllColumns))
                 {
                     StaticClassView.CurrentClassView = type;
                 }
+
+                if (!_hasInstances.Contains(i))
+                {
+                    continue;
+                }
+
+                cursorPos.X += size.X;
+                ImGui.SetCursorPos(cursorPos);
+                ImGui.PushStyleColor(ImGuiCol.Text, Config.Styles.CommentColor.InternalValue);
+                ImGui.TextUnformatted(" [Instance]");
+                ImGui.PopStyleColor();
             }
         }
         clipper.End();
@@ -58,12 +72,14 @@ public class ClassList
     public static void CheckClientStructsInstances()
     {
         if (ClientStructsData == null || _loadedFfxivClientStructTypes.Count == 0) return;
+        _hasInstances.Clear();
         foreach (var item in ClientStructsData.Classes)
         {
             var typeIndex = _loadedFfxivClientStructTypes.FindIndex(t => t.Name == item.Key);
             if (typeIndex < 0 || item.Value is null or { Instances: null or { Count: 0 } }) continue;
             _loadedFfxivClientStructTypes[typeIndex].Address = (nint)item.Value.Instances[0].Ea;
             _loadedFfxivClientStructTypes[typeIndex].IsPointerAddress = item.Value.Instances[0].Pointer;
+            _hasInstances.Add(typeIndex);
         }
     }
 

@@ -11,6 +11,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
     public bool IsCollapsed;
     // ReSharper disable once MemberInitializerValueIgnored
     public nint Address = (nint)0x140000000;
+    public bool IsPointerAddress = false;
     public string Name = GenerateRandomName();
     public string OffsetText;
     private string SizeString => Config.Global.DisplayAsHex ? "0x" + Size.ToString("X") : Size.ToString();
@@ -37,15 +38,6 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
     {
         Address = address;
         OffsetText = address.ToString("X");
-    }
-
-    public bool DrawName(bool isSelected = false)
-    {
-        // TODO: Add check if the class has an instance and change the color of the name to address color
-        //ImGuiExt.PushTextStyleColor(Config.Styles.AddressColor);
-        var selected = ImGui.Selectable(Name, isSelected, ImGuiSelectableFlags.SpanAllColumns);
-        //ImGui.PopStyleColor();
-        return selected;
     }
 
     public void DrawMemory(nint address, int offset)
