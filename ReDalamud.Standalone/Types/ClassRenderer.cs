@@ -7,13 +7,13 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
     public bool HasName => true;
     public bool HasCode => true;
     public int Size => Renderers.Sum(t => t.Size);
+    public string FieldName { get; set; }
     public List<IRenderer> Renderers = new();
     public bool IsCollapsed;
     // ReSharper disable once MemberInitializerValueIgnored
     public nint Address = unchecked((nint)0x140000000);
-    public bool IsPointerAddress = false;
+    public bool IsPointerAddress;
     public string Name = GenerateRandomName();
-    public string OffsetText;
     private string SizeString => Config.Global.DisplayAsHex ? "0x" + Size.ToString("X") : Size.ToString();
     private float _height = -1;
     private bool _addingCustomBytes;
@@ -27,7 +27,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
     public ClassRenderer(int size = 0x40)
     {
         Address = MemoryRead.OpenedProcess.MainModule!.BaseAddress;
-        OffsetText = Address.ToString("X");
+        FieldName = Address.ToString("X");
         for (var i = 0; i < size; i += 8)
         {
             Renderers.Add(new Unknown8Renderer());
@@ -37,7 +37,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
     public ClassRenderer(nint address, int size = 0x40) : this(size)
     {
         Address = address;
-        OffsetText = address.ToString("X");
+        FieldName = address.ToString("X");
     }
 
     public void DrawMemory(nint address, int offset)
@@ -165,16 +165,16 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         color.PushTextColor(Config.Styles.AddressColor);
         var changed = "";
         ImGui.PushItemWidth(ImGui.CalcTextSize(string.IsNullOrWhiteSpace(Name) ? "." : Name).X);
-        if (ImGuiExt.InputText($"AddressEdit##{address}", OffsetText, ref changed))
+        if (ImGuiExt.InputText($"AddressEdit##{address}", FieldName, ref changed))
         {
-            OffsetText = changed.Trim();
-            if (OffsetText[0] is '<' or '[')
+            FieldName = changed.Trim();
+            if (FieldName[0] is '<')
             {
                 // TODO: Get the address from data.yml in directory of Config.Global.ClientStructsPath
             }
-            else if (nint.TryParse(OffsetText, NumberStyles.AllowHexSpecifier, null, out nint parsedAddress))
+            else if (nint.TryParse(FieldName, NumberStyles.AllowHexSpecifier, null, out nint parsedAddress))
                 Address = parsedAddress;
-            OffsetText = Address.ToString("X");
+            FieldName = Address.ToString("X");
         }
         ImGui.SameLine();
         color.PushTextColor(Config.Styles.TypeColor);
@@ -584,6 +584,6 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             return nameComparison;
         }
 
-        return string.Compare(OffsetText, other.OffsetText, StringComparison.Ordinal);
+        return string.Compare(FieldName, other.FieldName, StringComparison.Ordinal);
     }
 }

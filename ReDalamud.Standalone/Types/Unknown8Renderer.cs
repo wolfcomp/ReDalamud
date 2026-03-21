@@ -1,20 +1,25 @@
-﻿namespace ReDalamud.Standalone.Types;
+namespace ReDalamud.Standalone.Types;
+
 public class Unknown8Renderer : IUnknownRenderer
 {
-    public bool HasName => false;
+    public bool HasName => true;
     public bool HasCode => false;
     public int Size => 8;
+    public string FieldName { get; set; } = "";
     private float _height = -1;
     private byte[] _bytes = [];
+
     public void DrawMemory(nint address, int offset)
     {
+        if (string.IsNullOrWhiteSpace(FieldName))
+            FieldName = $"field_{offset:X}";
         var bytes = MemoryRead.ReadBytes(address, Size);
         _bytes = bytes;
         var valueInt64 = BitConverter.ToInt64(bytes);
         var valueFloat = BitConverter.ToSingle(bytes);
         var stringFloat = valueFloat is > -999999.0f and < 999999.0f ? float.Round(valueFloat, 3).ToString("F3") : "#####";
         var valueHex = string.Join("", BitConverter.ToString(bytes).Split('-').Reverse()).TrimStart('0');
-        if(!string.IsNullOrWhiteSpace(valueHex))
+        if (!string.IsNullOrWhiteSpace(valueHex))
         {
             valueHex = "0x" + valueHex;
         }
@@ -28,6 +33,12 @@ public class Unknown8Renderer : IUnknownRenderer
         style.PushTextColor(Config.Styles.TextColor);
         ImGui.TextUnformatted(MemoryRead.CharFromBytes(bytes));
         ImGui.SameLine();
+        if (Config.Global.ShowNameOnUnknown)
+        {
+            style.PushTextColor(Config.Styles.NameColor);
+            ImGui.TextUnformatted(FieldName);
+            ImGui.SameLine();
+        }
         style.PushTextColor(Config.Styles.HexValueColor);
         ImGui.TextUnformatted(string.Join(' ', bytes.Select(t => t.ToString("X2"))));
         ImGui.SameLine();

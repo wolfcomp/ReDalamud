@@ -1,9 +1,10 @@
-﻿namespace ReDalamud.Standalone.Types;
+namespace ReDalamud.Standalone.Types;
 public class Unknown1Renderer : IUnknownRenderer
 {
     public bool HasName => false;
     public bool HasCode => false;
     public int Size => 1;
+    public string FieldName { get; set; } = "";
     private float _height = -1;
     private byte[] _bytes = [];
     public void DrawMemory(nint address, int offset)

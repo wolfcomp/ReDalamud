@@ -44,6 +44,10 @@ public class ConfigWindow
                 {
                     Config.Global.DisplayAsHex = !Config.Global.DisplayAsHex;
                 }
+                if (ImGui.RadioButton("Show field name on unknowns"u8, Config.Global.ShowNameOnUnknown))
+                {
+                    Config.Global.ShowNameOnUnknown = !Config.Global.ShowNameOnUnknown;
+                }
                 ImGui.EndTabItem();
             }
 

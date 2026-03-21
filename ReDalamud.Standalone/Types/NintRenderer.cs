@@ -1,9 +1,10 @@
-﻿namespace ReDalamud.Standalone.Types;
+namespace ReDalamud.Standalone.Types;
 public class NintRenderer : IRenderer
 {
     public bool HasName => false;
     public bool HasCode => false;
     public int Size => nint.Size;
+    public string FieldName { get; set; } = "";
     private float _height = -1;
     public void DrawMemory(nint address, int offset)
     {
