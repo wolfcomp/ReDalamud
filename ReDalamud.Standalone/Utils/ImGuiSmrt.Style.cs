@@ -101,6 +101,7 @@ public static partial class ImGuiSmrt
         {
             CheckStyleIdx(idx, value.GetType());
             Stack.Add((idx, value));
+            ImGui.PushStyleVar(idx, value);
             _count++;
             return this;
         }
@@ -109,6 +110,7 @@ public static partial class ImGuiSmrt
         {
             CheckStyleIdx(idx, value.GetType());
             Stack.Add((idx, value));
+            ImGui.PushStyleVar(idx, value);
             _count++;
             return this;
         }
