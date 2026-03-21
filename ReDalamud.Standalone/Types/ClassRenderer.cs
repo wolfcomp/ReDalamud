@@ -64,7 +64,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         ImGui.BeginChild($"ClassRendererMemory##{Name}{address}", new Vector2(-1, GetHeight()));
         var posY = 0f;
         offset = 0;
-        var childSize = new Vector2(-1, ImGui.GetTextLineHeight());
+        var childSize = new Vector2(-1, ImGui.GetTextLineHeightWithSpacing());
         for (var index = 0; index < Renderers.Count; index++)
         {
             //if (!isVisible(posY))
@@ -80,11 +80,14 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
                 ImGui.PushStyleColor(ImGuiCol.ChildBg, (Vector4)Config.Styles.HoveredColor);
             var originalSpacing = ImGui.GetStyle().ItemSpacing.Y;
             ImGui.PushStyleVarY(ImGuiStyleVar.ItemSpacing, 0);
-            ImGui.PushStyleVarY(ImGuiStyleVar.ItemInnerSpacing, originalSpacing);
-            ImGui.BeginChild($"ClassRendererRow###{Name}{address}{index}", childSize, ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar);
-            renderer.DrawMemory(address + offset, offset);
+            if (ImGui.BeginChild($"ClassRendererRow###{Name}{address}{index}", childSize, ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar))
+            {
+                ImGui.PushStyleVarY(ImGuiStyleVar.ItemSpacing, originalSpacing);
+                renderer.DrawMemory(address + offset, offset);
+                ImGui.PopStyleVar();
+            }
             ImGui.EndChild();
-            ImGui.PopStyleVar(2);
+            ImGui.PopStyleVar();
             if (selected)
                 ImGui.PopStyleColor();
             if (index == _lastHoveredIndex)
