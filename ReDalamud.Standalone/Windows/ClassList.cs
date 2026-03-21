@@ -1,3 +1,4 @@
+using ReDalamud.Shared.ClientStructs.Data;
 using ReDalamud.Standalone.Types;
 using System.Reflection;
 
@@ -14,6 +15,12 @@ public class ClassList
     {
         _loadedFfxivClientStructTypes = GetLoadedFFXIVClientStructTypes();
         _processingXivTypes = false;
+
+        if (!string.IsNullOrWhiteSpace(Config.Global.ClientStructsPath) && Data.ParseYaml(Config.Global.ClientStructsPath, (ulong)MemoryRead.OpenedProcess.MainModule!.BaseAddress, out var data))
+        {
+            ClientStructsData = data;
+            CheckClientStructsInstances();
+        }
     }
 
     public static unsafe void Draw()
@@ -48,7 +55,19 @@ public class ClassList
         ImGui.End();
     }
 
-    public static List<ClassRenderer> GetLoadedFFXIVClientStructTypes()
+    public static void CheckClientStructsInstances()
+    {
+        if (ClientStructsData == null || _loadedFfxivClientStructTypes.Count == 0) return;
+        foreach (var item in ClientStructsData.Classes)
+        {
+            var typeIndex = _loadedFfxivClientStructTypes.FindIndex(t => t.Name == item.Key);
+            if (typeIndex < 0 || item.Value is null or { Instances: null or { Count: 0 } }) continue;
+            _loadedFfxivClientStructTypes[typeIndex].Address = (nint)item.Value.Instances[0].Ea;
+            _loadedFfxivClientStructTypes[typeIndex].IsPointerAddress = item.Value.Instances[0].Pointer;
+        }
+    }
+
+    private static List<ClassRenderer> GetLoadedFFXIVClientStructTypes()
     {
         var types = new List<(Type Type, int Size)>();
         var assemblies = AppDomain.CurrentDomain.GetAssemblies();

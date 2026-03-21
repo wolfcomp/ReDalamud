@@ -1,3 +1,4 @@
+using ReDalamud.Shared.ClientStructs.Data;
 using ReDalamud.Standalone.Types;
 
 namespace ReDalamud.Standalone;
@@ -7,6 +8,8 @@ public class Program
     private static Timer? _timer;
     public static Random Rand = new();
     public static bool ShouldSaveOnFrame = false;
+    public static Data? ClientStructsData = null;
+
     public static unsafe void Main(string[] args)
     {
         var loc = Directory.GetCurrentDirectory();
@@ -70,6 +73,12 @@ public class Program
             if (!ShouldSaveOnFrame)
             {
                 continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(Config.Global.ClientStructsPath) && Data.ParseYaml(Config.Global.ClientStructsPath, (ulong)MemoryRead.OpenedProcess.MainModule!.BaseAddress, out var data))
+            {
+                ClientStructsData = data;
+                ClassList.CheckClientStructsInstances();
             }
 
             Config.Save();
