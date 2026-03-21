@@ -10,7 +10,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
     public List<IRenderer> Renderers = new();
     public bool IsCollapsed;
     // ReSharper disable once MemberInitializerValueIgnored
-    public nint Address = (nint)0x140000000;
+    public nint Address = unchecked((nint)0x140000000);
     public bool IsPointerAddress = false;
     public string Name = GenerateRandomName();
     public string OffsetText;
@@ -135,11 +135,6 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         ImGui.EndChild();
         _lastHoveredIndex = _hoveredIndex;
         return;
-
-        bool isVisible(float y)
-        {
-            return y >= scrollY && y <= windowHeight + scrollY;
-        }
     }
 
     private int GetMinIndexSelected => _selectedIndexes.Length > 0 ? _selectedIndexes[0] : _lastSelectedIndex;

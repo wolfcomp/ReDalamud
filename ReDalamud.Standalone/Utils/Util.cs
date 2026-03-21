@@ -82,7 +82,9 @@ public static class Util
             fixed (char* chPtr = &s.GetPinnableReference())
                 chars = (IntPtr)chPtr;
         }
+        #pragma warning disable CS8602
         return Encoding.UTF8.GetBytes((char*)chars, s.Length, utf8Bytes, utf8ByteCount);
+        #pragma warning restore CS8602
     }
 
     internal static unsafe int GetUtf8(

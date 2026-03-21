@@ -10,8 +10,6 @@ public unsafe partial class ImGuiRenderer
 {
     public static ImGuiRenderer Instance;
 
-    private ImTextureID _fontTextureId;
-    private float _time;
     private SDLWindow* _window;
     private SDLGPUDevice* _gpuDevice;
     private Vector4 _clearColor;

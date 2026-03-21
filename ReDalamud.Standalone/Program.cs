@@ -24,8 +24,6 @@ public class Program
         }
         Config.Load();
 
-        var quit = false;
-
         var process = MemoryRead.OpenProcess("ffxiv_dx11");
 
         if (process != nint.Zero)
