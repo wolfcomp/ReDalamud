@@ -167,8 +167,8 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
                 ImGui.SetClipboardText(Address.ToString("X"));
             }
 
-            ImGui.BeginDisabled(_selectedIndex == -1);
-            if (ImGuiExt.MenuWithIcon(Icon16.ExchangeButton, "Change Type", $"ChangeType##{Name}{address}"))
+            ImGui.BeginDisabled(_lastSelectedIndex == -1);
+            ImGuiExt.MenuWithIcon(Icon16.ExchangeButton, "Change Type", $"ChangeType##{Name}{address}", () =>
             {
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonHex64, "Hex64"))
                     InsertType(_selectedIndex, new Unknown8Renderer());
@@ -181,11 +181,11 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
                 ImGui.Separator();
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonNInt, "NInt"))
                     InsertType(_selectedIndex, new NintRenderer());
-                // nint, int64, int32, int16, int8, ImGui.Seperator(), nuint, uint64 / QWORD, uint32 / DWORD, uint16 / WORD, uint8 / BYTE, ImGui.Seperator(), bool, bitfield, Enum, , ImGui.Seperator(), float, double, ImGui.Seperator(), vector4, vector3, vector2, matrix 4x4, matrix 3x4, matrix 3x3, ImGui.Seperator(), utf8 / ascii text, utf8 / ascii text pointer, utf16 / unicode text, utf16 / unicode text pointer, ImGui.Seperator(), pointer, array, union, ImGui.Seperator(), class instance, ImGui.Seperator(), vtable pointer, function, function pointer, ImGui.Seperator(), custom
-            }
+                // int64, int32, int16, int8, ImGui.Seperator(), nuint, uint64 / QWORD, uint32 / DWORD, uint16 / WORD, uint8 / BYTE, ImGui.Seperator(), bool, bitfield, Enum, , ImGui.Seperator(), float, double, ImGui.Seperator(), vector4, vector3, vector2, matrix 4x4, matrix 3x4, matrix 3x3, ImGui.Seperator(), utf8 / ascii text, utf8 / ascii text pointer, utf16 / unicode text, utf16 / unicode text pointer, ImGui.Seperator(), pointer, array, union, ImGui.Seperator(), class instance, ImGui.Seperator(), vtable pointer, function, function pointer, ImGui.Seperator(), custom
+            });
             ImGui.EndDisabled();
 
-            if (ImGuiExt.MenuWithIcon(Icon16.ButtonAddBytesX, "Add Bytes", $"ClassAddBytes##{Name}{address}"))
+            ImGuiExt.MenuWithIcon(Icon16.ButtonAddBytesX, "Add Bytes", $"ClassAddBytes##{Name}{address}", () =>
             {
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytes4, "Add 4 Byte"))
                     AddBytes(4);
@@ -208,11 +208,10 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonAddBytesX, "Add ... Bytes"))
                     _addingCustomBytes = true;
 
-                ImGui.EndMenu();
-            }
+            });
 
-            ImGui.BeginDisabled(_selectedIndex == -1);
-            if (ImGuiExt.MenuWithIcon(Icon16.ButtonInsertBytesX, "Insert Bytes", $"ClassInsertBytes##{Name}{address}"))
+            ImGui.BeginDisabled(_lastSelectedIndex == -1);
+            ImGuiExt.MenuWithIcon(Icon16.ButtonInsertBytesX, "Insert Bytes", $"ClassInsertBytes##{Name}{address}", () =>
             {
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonInsertBytes4, "Insert 4 Byte"))
                     InsertBytes(_selectedIndex, 4);
@@ -234,9 +233,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
 
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonInsertBytesX, "Insert ... Bytes"))
                     _insertingCustomBytes = true;
-
-                ImGui.EndMenu();
-            }
+            });
             ImGui.EndDisabled();
 
             ImGui.EndPopup();

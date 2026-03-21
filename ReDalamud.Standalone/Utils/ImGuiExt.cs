@@ -131,7 +131,7 @@ public static partial class ImGuiExt
         return ImGui.IsItemHovered() && ImGui.IsItemClicked(ImGuiMouseButton.Left);
     }
 
-    public static bool MenuWithIcon(Icon16 icon, string label, string popupLabel)
+    public static void MenuWithIcon(Icon16 icon, string label, string popupLabel, Action draw)
     {
         var style = ImGui.GetStyle();
         var pos = ImGui.GetCursorScreenPos();
@@ -175,9 +175,18 @@ public static partial class ImGuiExt
                 ImGui.OpenPopup(popupLabel);
         }
         var isOpen = ImGui.IsPopupOpen(popupLabel);
-        if (isOpen)
-            ImGui.SetNextWindowPos(pos + childSize with { X = style.WindowPadding.X / 2, Y = 0 });
-        return isOpen && ImGui.Begin(popupLabel, ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize);
+        switch (isOpen)
+        {
+            case true:
+                ImGui.SetNextWindowPos(pos + childSize with { X = style.WindowPadding.X / 2, Y = 0 });
+                break;
+            case false:
+                return;
+        }
+
+        ImGui.Begin(popupLabel, ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize);
+        draw();
+        ImGui.End();
     }
 
     public static unsafe void SpinnerDots(string label, ref float nextdot, float radius, float thickness, Color color, float speed = 2f,
