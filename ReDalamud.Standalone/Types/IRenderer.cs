@@ -1,4 +1,4 @@
-﻿namespace ReDalamud.Standalone.Types;
+namespace ReDalamud.Standalone.Types;
 public interface IRenderer
 {
     bool HasName { get; }
@@ -7,6 +7,11 @@ public interface IRenderer
     void DrawMemory(nint address, int offset);
     void DrawCSharpCode();
     float GetHeight();
+}
+
+public interface ICustomRenderer : IRenderer
+{
+
 }
 
 public interface IUnknownRenderer : IRenderer
