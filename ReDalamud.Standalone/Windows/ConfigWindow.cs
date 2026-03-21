@@ -6,11 +6,11 @@ public class ConfigWindow
     public static unsafe void Draw()
     {
         if(!MainMenuBar.StyleWindowOpened) return;
-        ImGui.Begin("ConfigWindow", ref MainMenuBar.StyleWindowOpened, ImGuiWindowFlags.AlwaysVerticalScrollbar);
+        ImGui.Begin("ConfigWindow"u8, ref MainMenuBar.StyleWindowOpened, ImGuiWindowFlags.AlwaysVerticalScrollbar);
 
-        if (ImGui.BeginTabBar("StyleTabBar"))
+        if (ImGui.BeginTabBar("StyleTabBar"u8))
         {
-            if (ImGui.BeginTabItem("Colors"))
+            if (ImGui.BeginTabItem("Colors"u8))
             {
                 DrawColorPickerOption("Background Color"u8, ref Config.Styles.BackgroundColor);
                 DrawColorPickerOption("Selected Color"u8, ref Config.Styles.SelectedColor);
@@ -37,23 +37,23 @@ public class ConfigWindow
             // }
             //
 
-            if (ImGui.BeginTabItem("Global"))
+            if (ImGui.BeginTabItem("Global"u8))
             {
-                ImGui.InputText("ClientStructs IDA Location", ref Config.Global.ClientStructsPath, 1000);
-                if (ImGui.RadioButton("Size as Hex", Config.Global.DisplayAsHex))
+                ImGui.InputText("ClientStructs IDA Location"u8, ref Config.Global.ClientStructsPath, 1000);
+                if (ImGui.RadioButton("Size as Hex"u8, Config.Global.DisplayAsHex))
                 {
                     Config.Global.DisplayAsHex = !Config.Global.DisplayAsHex;
                 }
                 ImGui.EndTabItem();
             }
 
-            if (ImGui.BeginTabItem("ImGui Style"))
+            if (ImGui.BeginTabItem("ImGui Style"u8))
             {
                 ImGui.ShowStyleEditor();
                 ImGui.EndTabItem();
             }
 
-            if (ImGui.Button("Save"))
+            if (ImGui.Button("Save"u8))
                 ShouldSaveOnFrame = true;
 
             ImGui.EndTabBar();
