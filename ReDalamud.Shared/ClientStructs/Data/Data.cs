@@ -11,6 +11,7 @@ public class Data
     public Dictionary<ulong, string> Globals;
     public Dictionary<ulong, string> Functions;
     public Dictionary<string, DataClass> Classes;
+    public FastLookupList<DataVtableLookup> VtableLookup = [];
 
     public static bool ParseYaml(string path, ulong baseAddress, [NotNullWhen(true)] out Data? data)
     {
@@ -26,12 +27,22 @@ public class Data
         // TODO: move this to a different place when application is setup to allow for game to be relaunched
         for (var i = 0; i < data.Classes.Count; i++)
         {
-            var (_, value) = data.Classes.ElementAt(i);
+            var (name, value) = data.Classes.ElementAt(i);
             if (value is null or { Instances: null }) continue;
             foreach (var instance in value.Instances)
             {
                 instance.Ea -= 0x140000000;
                 instance.Ea += baseAddress;
+            }
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            if (value.Vtbls is null) continue;
+
+            var j = 0;
+            foreach(var vtbl in value.Vtbls)
+            {
+                vtbl.Ea -= 0x140000000;
+                vtbl.Ea += baseAddress;
+                data.VtableLookup.Add(new (vtbl, name, j++));
             }
         }
 
@@ -53,3 +64,5 @@ public class DataOffsetDefinition
     public string Base;
     public bool Pointer;
 }
+
+public record DataVtableLookup(DataOffsetDefinition Vtable, string ClassName, int Index);
