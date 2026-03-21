@@ -1,6 +1,7 @@
 using System.Globalization;
 
 namespace ReDalamud.Standalone.Types;
+
 public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
 {
     public bool HasName => true;
@@ -163,12 +164,12 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         style.Push(ImGuiStyleVar.FramePadding, new Vector2(0, 0));
         style.Push(ImGuiStyleVar.FrameRounding, 0);
         color.Push(ImGuiCol.Button, Config.Styles.BackgroundColor);
-        if (ImGui.ImageButton($"Collapse##{Name}{address}", IconLoader.GetIconTextureId(IsCollapsed ? Icon16.ClosedIcon : Icon16.OpenIcon), new Vector2(8)))
+        if (ImGui.ImageButton($"Collapse##{Name}{address}", IconLoader.GetIconTextureId(IsCollapsed ? Icon16.ClosedIcon : Icon16.OpenIcon), new Vector2(size)))
         {
             IsCollapsed = !IsCollapsed;
         }
         ImGui.SameLine();
-        ImGui.Image(IconLoader.GetIconTextureId(Icon16.ClassType), new Vector2(16));
+        ImGui.Image(IconLoader.GetIconTextureId(Icon16.ClassType), new Vector2(size));
         style.Dispose();
         ImGui.SameLine();
         color.PushTextColor(Config.Styles.AddressColor);
@@ -387,7 +388,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
                 size.X = windowSize.X;
             if (windowSize.Y < size.Y)
                 size.Y = windowSize.Y;
-            var windowTopLeft = windowSize / 2 - size / 2;
+            var windowTopLeft = (windowSize - size) / 2;
             ImGui.SetWindowPos(windowTopLeft);
             ImGui.SetWindowSize(size);
             ImGui.TextUnformatted("Number of bytes to insert:");
