@@ -16,7 +16,8 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
     private float _height = -1;
     private bool _addingCustomBytes;
     private int _addingCustomBytesSize;
-    private int _selectedIndex = -1;
+    private int _lastSelectedIndex = -1;
+    private int[] _selectedIndexes = [];
     private int _hoveredIndex = -1;
     private int _lastHoveredIndex = -1;
     private bool _insertingCustomBytes;
@@ -71,7 +72,8 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             //    continue;
             //}
             var renderer = Renderers[index];
-            if (index == _selectedIndex)
+            var selected = index == _lastSelectedIndex || _selectedIndexes.Contains(index);
+            if (selected)
                 ImGui.PushStyleColor(ImGuiCol.ChildBg, (Vector4)Config.Styles.SelectedColor);
             if (index == _lastHoveredIndex)
                 ImGui.PushStyleColor(ImGuiCol.ChildBg, (Vector4)Config.Styles.HoveredColor);
@@ -82,16 +84,49 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             renderer.DrawMemory(address + offset, offset);
             ImGui.EndChild();
             ImGui.PopStyleVar(2);
-            if (index == _selectedIndex)
+            if (selected)
                 ImGui.PopStyleColor();
             if (index == _lastHoveredIndex)
                 ImGui.PopStyleColor();
             if (ImGui.IsItemHovered())
             {
-                if (ImGui.IsMouseClicked(ImGuiMouseButton.Left)) _selectedIndex = index;
+                if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                {
+                    var lastIndex = index;
+                    if (ImGui.IsKeyDown(ImGuiKey.LeftCtrl) || ImGui.IsKeyDown(ImGuiKey.RightCtrl))
+                    {
+                        if (_selectedIndexes.Contains(index))
+                        {
+                            _selectedIndexes = _selectedIndexes.Except([index]).ToArray();
+                            lastIndex = -1;
+                        }
+                        else
+                        {
+                            _selectedIndexes = [.. _selectedIndexes, index];
+                            if(!_selectedIndexes.Contains(_lastSelectedIndex))
+                                _selectedIndexes = [.. _selectedIndexes, _lastSelectedIndex];
+                        }
+                    }
+                    else if (ImGui.IsKeyDown(ImGuiKey.LeftShift) || ImGui.IsKeyDown(ImGuiKey.RightShift))
+                    {
+                        _selectedIndexes.Sort();
+                        var minIndex = Math.Min(GetMinIndexSelected, index);
+                        var maxIndex = Math.Clamp(Math.Max(GetMaxIndexSelected, index) + 1, 0, index + 1);
+                        _selectedIndexes = Enumerable.Range(minIndex, maxIndex - minIndex).ToArray();
+                    }
+                    else
+                    {
+                        _selectedIndexes = [];
+                    }
+                    _lastSelectedIndex = lastIndex;
+                }
                 if (ImGui.IsMouseClicked(ImGuiMouseButton.Right))
                 {
-                    _selectedIndex = index;
+                    if (!_selectedIndexes.Contains(index))
+                    {
+                        _selectedIndexes = [index];
+                    }
+                    _lastSelectedIndex = index;
                     ImGui.OpenPopup($"ClassPopup##{Name}{address}");
                 }
                 _hoveredIndex = index;
@@ -111,11 +146,15 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         }
     }
 
+    private int GetMinIndexSelected => _selectedIndexes.Length > 0 ? _selectedIndexes[0] : _lastSelectedIndex;
+
+    private int GetMaxIndexSelected => _selectedIndexes.Length > 0 ? _selectedIndexes[^1] : _lastSelectedIndex;
+
     private void DrawHeader(nint address)
     {
         var style = new ImGuiSmrt.Style();
         var color = new ImGuiSmrt.Color();
-        if (_selectedIndex == -1)
+        if (_lastSelectedIndex == -1)
             color.Push(ImGuiCol.ChildBg, (Vector4)Config.Styles.SelectedColor);
         if (_lastHoveredIndex == -1)
             color.Push(ImGuiCol.ChildBg, (Vector4)Config.Styles.HoveredColor);
@@ -163,10 +202,15 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         ImGui.EndChild();
         if (ImGui.IsItemHovered())
         {
-            if (ImGui.IsMouseClicked(ImGuiMouseButton.Left)) _selectedIndex = -1;
+            if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+            {
+                _selectedIndexes = [];
+                _lastSelectedIndex = -1;
+            }
             if (ImGui.IsMouseClicked(ImGuiMouseButton.Right))
             {
-                _selectedIndex = -1;
+                _selectedIndexes = [];
+                _lastSelectedIndex = -1;
                 ImGui.OpenPopup($"ClassPopup##{Name}{address}");
             }
         }
@@ -187,16 +231,16 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             ImGuiExt.MenuWithIcon(Icon16.ExchangeButton, "Change Type", $"ChangeType##{Name}{address}", () =>
             {
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonHex64, "Hex64"))
-                    InsertType(_selectedIndex, new Unknown8Renderer());
+                    _selectedIndexes = InsertType(_selectedIndexes, new Unknown8Renderer());
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonHex32, "Hex32"))
-                    InsertType(_selectedIndex, new Unknown8Renderer());
+                    _selectedIndexes = InsertType(_selectedIndexes, new Unknown4Renderer());
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonHex16, "Hex16"))
-                    InsertType(_selectedIndex, new Unknown8Renderer());
+                    _selectedIndexes = InsertType(_selectedIndexes, new Unknown2Renderer());
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonHex8, "Hex8"))
-                    InsertType(_selectedIndex, new Unknown8Renderer());
+                    _selectedIndexes = InsertType(_selectedIndexes, new Unknown1Renderer());
                 ImGui.Separator();
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonNInt, "NInt"))
-                    InsertType(_selectedIndex, new NintRenderer());
+                    _selectedIndexes = InsertType(_selectedIndexes, new NintRenderer());
                 // int64, int32, int16, int8, ImGui.Seperator(), nuint, uint64 / QWORD, uint32 / DWORD, uint16 / WORD, uint8 / BYTE, ImGui.Seperator(), bool, bitfield, Enum, , ImGui.Seperator(), float, double, ImGui.Seperator(), vector4, vector3, vector2, matrix 4x4, matrix 3x4, matrix 3x3, ImGui.Seperator(), utf8 / ascii text, utf8 / ascii text pointer, utf16 / unicode text, utf16 / unicode text pointer, ImGui.Seperator(), pointer, array, union, ImGui.Seperator(), class instance, ImGui.Seperator(), vtable pointer, function, function pointer, ImGui.Seperator(), custom
             });
             ImGui.EndDisabled();
@@ -230,22 +274,22 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             ImGuiExt.MenuWithIcon(Icon16.ButtonInsertBytesX, "Insert Bytes", $"ClassInsertBytes##{Name}{address}", () =>
             {
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonInsertBytes4, "Insert 4 Byte"))
-                    InsertBytes(_selectedIndex, 4);
+                    InsertBytes(GetMaxIndexSelected, 4);
 
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonInsertBytes8, "Insert 8 Bytes"))
-                    InsertBytes(_selectedIndex, 8);
+                    InsertBytes(GetMaxIndexSelected, 8);
 
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonInsertBytes64, "Insert 64 Bytes"))
-                    InsertBytes(_selectedIndex, 64);
+                    InsertBytes(GetMaxIndexSelected, 64);
 
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonInsertBytes256, "Insert 256 Bytes"))
-                    InsertBytes(_selectedIndex, 256);
+                    InsertBytes(GetMaxIndexSelected, 256);
 
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonInsertBytes1024, "Insert 1024 Bytes"))
-                    InsertBytes(_selectedIndex, 1024);
+                    InsertBytes(GetMaxIndexSelected, 1024);
 
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonInsertBytes4096, "Insert 4096 Bytes"))
-                    InsertBytes(_selectedIndex, 4096);
+                    InsertBytes(GetMaxIndexSelected, 4096);
 
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonInsertBytesX, "Insert ... Bytes"))
                     _insertingCustomBytes = true;
@@ -390,7 +434,7 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             if (ImGui.Button("Ok"))
             {
                 if (bytes > 0)
-                    InsertBytes(_selectedIndex, bytes);
+                    InsertBytes(GetMaxIndexSelected, bytes);
                 ImGui.CloseCurrentPopup();
             }
 
@@ -481,6 +525,26 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             }
             index++;
         }
+    }
+
+    private int[] InsertType(Span<int> indexes, IRenderer renderer)
+    {
+        if (indexes.Length == 1)
+        {
+            InsertType(indexes[0], renderer);
+            return [indexes[0]];
+        }
+        indexes.Sort();
+        var firstIndex = indexes[0];
+        var lastIndex = indexes[^1] + 1;
+        var totalSize = Renderers[firstIndex..lastIndex].Sum(t => t.Size);
+        Renderers.RemoveRange(firstIndex, lastIndex - firstIndex);
+        var count = (int)Math.Ceiling(totalSize / (float)renderer.Size);
+        for (var i = 0; i < count; i++)
+        {
+            Renderers.Insert(firstIndex, renderer);
+        }
+        return Enumerable.Range(firstIndex, count).ToArray();
     }
 
     public float GetHeight()
