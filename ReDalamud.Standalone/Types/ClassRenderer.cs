@@ -447,19 +447,19 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
             switch (sizeLeft)
             {
                 case >= 8:
-                    Renderers.Insert(index + 1, new Unknown8Renderer());
+                    Renderers.Insert(index, new Unknown8Renderer());
                     sizeLeft -= 8;
                     break;
                 case >= 4:
-                    Renderers.Insert(index + 1, new Unknown4Renderer());
+                    Renderers.Insert(index, new Unknown4Renderer());
                     sizeLeft -= 4;
                     break;
                 case >= 2:
-                    Renderers.Insert(index + 1, new Unknown2Renderer());
+                    Renderers.Insert(index, new Unknown2Renderer());
                     sizeLeft -= 2;
                     break;
                 default:
-                    Renderers.Insert(index + 1, new Unknown1Renderer());
+                    Renderers.Insert(index, new Unknown1Renderer());
                     sizeLeft -= 1;
                     break;
             }
