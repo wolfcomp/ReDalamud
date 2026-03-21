@@ -66,7 +66,7 @@ internal class EnumList
         {
             var name = GetNameFromType(t);
             return (name, new Dictionary<string, nuint>());
-        }).ToList();
+        }).OrderBy(t => t.name).ToList();
     }
 
     private static string GetNameFromType(Type type)
