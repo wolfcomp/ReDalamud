@@ -225,7 +225,10 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
         {
             if (ImGui.Selectable("Copy Address"))
             {
-                ImGui.SetClipboardText(Address.ToString("X"));
+                if (_lastSelectedIndex == -1)
+                    ImGui.SetClipboardText(Address.ToString("X"));
+                else
+                    ImGui.SetClipboardText((Renderers[..(_lastSelectedIndex+1)].Sum(t => t.Size) + Address).ToString("X"));
             }
 
             ImGui.BeginDisabled(_lastSelectedIndex == -1);
