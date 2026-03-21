@@ -131,6 +131,8 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
                     ImGui.OpenPopup($"ClassPopup##{Name}{address}");
                 }
                 _hoveredIndex = index;
+                if(renderer is IUnknownRenderer unknownRenderer)
+                    unknownRenderer.DrawToolTip();
             }
 
             posY += renderer.GetHeight();
