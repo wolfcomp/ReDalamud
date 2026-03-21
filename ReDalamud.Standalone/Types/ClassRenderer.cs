@@ -44,6 +44,11 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
     {
         if (address == nint.Zero)
             address = Address;
+        if (IsPointerAddress && MemoryRead.Read(address, out nint ptr))
+        {
+            address = Address = ptr;
+            IsPointerAddress = false;
+        }
 
         _hoveredIndex = -1;
 
