@@ -242,7 +242,16 @@ public class ClassRenderer : IRenderer, IComparable<ClassRenderer>
                 ImGui.Separator();
                 if (ImGuiExt.SelectableWithIcon(Icon16.ButtonNInt, "NInt"))
                     _selectedIndexes = InsertType(_selectedIndexes, new NintRenderer());
-                // int64, int32, int16, int8, ImGui.Seperator(), nuint, uint64 / QWORD, uint32 / DWORD, uint16 / WORD, uint8 / BYTE, ImGui.Seperator(), bool, bitfield, Enum, , ImGui.Seperator(), float, double, ImGui.Seperator(), vector4, vector3, vector2, matrix 4x4, matrix 3x4, matrix 3x3, ImGui.Seperator(), utf8 / ascii text, utf8 / ascii text pointer, utf16 / unicode text, utf16 / unicode text pointer, ImGui.Seperator(), pointer, array, union, ImGui.Seperator(), class instance, ImGui.Seperator(), vtable pointer, function, function pointer, ImGui.Seperator(), custom
+                // int64, int32, int16, int8, ImGui.Seperator()
+                // nuint, uint64 / QWORD, uint32 / DWORD, uint16 / WORD, uint8 / BYTE, ImGui.Seperator()
+                // bool, bitfield, Enum, , ImGui.Seperator()
+                // float, double, ImGui.Seperator()
+                // vector4, vector3, vector2, matrix 4x4, matrix 3x4, matrix 3x3, ImGui.Seperator()
+                // utf8 / ascii text, utf8 / ascii text pointer, utf16 / unicode text, utf16 / unicode text pointer, ImGui.Seperator()
+                // pointer, array, union, ImGui.Seperator()
+                // class instance, ImGui.Seperator()
+                // vtable pointer, function, function pointer, ImGui.Seperator()
+                // custom
             });
             ImGui.EndDisabled();
 
