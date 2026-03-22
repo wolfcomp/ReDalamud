@@ -26,21 +26,25 @@ public class Unknown8Renderer : UnknownBaseRenderer
 
         DrawLine(offset, address, bytes, $"{stringFloat} {valueInt64} {valueHex}");
 
-        string? pointsTo;
+        string? pointsTo = null;
         var vtable = ClientStructsData?.VtableLookup.FindFromNeedle(t => t.Vtable.Ea, (a, b) => (a.Vtable.Ea == (ulong)valueInt64 || b.Vtable.Ea == (ulong)valueInt64, a.Vtable.Ea == (ulong)valueInt64), (ulong)valueInt64);
         if (vtable != null && vtable.Vtable.Ea == (ulong)valueInt64)
         {
             pointsTo = vtable.ClassName;
+            if (!string.IsNullOrWhiteSpace(vtable.Vtable.Base))
+            {
+                pointsTo += vtable.Vtable.GetBases(ClientStructsData!);
+            }
             if (vtable.Index != 0)
                 pointsTo += $"_{(string.IsNullOrWhiteSpace(vtable.Vtable.Base) ? vtable.Index : vtable.Vtable.Base)}";
         }
-        else
-            pointsTo = MemoryRead.IsInRegion((nint)valueInt64);
+        else if(valueInt64 != nint.Zero && MemoryRead.TryGetRegionName((nint)valueInt64, out var region))
+            pointsTo = $"<{region}>{valueHex[2..]}";;
         if (string.IsNullOrWhiteSpace(pointsTo))
             return;
         ImGui.SameLine();
         ImGui.PushStyleColor(ImGuiCol.Text, Config.Styles.OffsetColor.InternalValue);
-        ImGui.TextUnformatted($"-> <{pointsTo.ToUpper()}>{valueHex[2..]}");
+        ImGui.TextUnformatted($"-> {pointsTo}");
         ImGui.PopStyleColor();
     }
 

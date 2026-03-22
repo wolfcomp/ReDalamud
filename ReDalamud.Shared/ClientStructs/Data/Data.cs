@@ -68,6 +68,15 @@ public class DataOffsetDefinition
     public ulong Ea;
     public string? Base;
     public bool? Pointer;
+
+    public string GetBases(Data data)
+    {
+        if (string.IsNullOrWhiteSpace(Base)) return "";
+        var sb = new StringBuilder(" : ");
+        sb.Append(Base);
+        if (data.Classes[Base] is {Vtbls: { } vtbl }) sb.Append(vtbl[0].GetBases(data));
+        return sb.ToString();
+    }
 }
 
 public record DataVtableLookup(DataOffsetDefinition Vtable, string ClassName, int Index);
