@@ -10,7 +10,7 @@ public class FastLookupList<T> : List<T>
         var lower = 0;
         var upper = Count - 1;
         if (lower == upper) return this[0];
-        while (checkValue(this[lower], this[upper]).Item1 && lower != upper - 1)
+        while (lower != upper - 1)
         {
             if (upper - lower <= 50)
             {
