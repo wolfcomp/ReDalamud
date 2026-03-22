@@ -1,4 +1,4 @@
-﻿using SDLEvent = Hexa.NET.SDL3.SDLEvent;
+using SDLEvent = Hexa.NET.SDL3.SDLEvent;
 
 namespace ReDalamud.Standalone.Windows;
 
@@ -44,6 +44,14 @@ public class MainMenuBar
                 {
                     StyleWindowOpened = !StyleWindowOpened;
                 }
+                ImGui.EndMenu();
+            }
+            if (ImGui.BeginMenu("Process"))
+            {
+                ImGui.BeginDisabled(MemoryRead.OpenedProcessHandle != nint.Zero);
+                if(ImGui.MenuItem("Attach to last"))
+                    OpenProcess();
+                ImGui.EndDisabled();
                 ImGui.EndMenu();
             }
             ImGui.EndMainMenuBar();
