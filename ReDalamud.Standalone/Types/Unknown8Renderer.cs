@@ -41,6 +41,7 @@ public class Unknown8Renderer : UnknownBaseRenderer
         ImGui.SameLine();
         ImGui.PushStyleColor(ImGuiCol.Text, Config.Styles.OffsetColor.InternalValue);
         ImGui.TextUnformatted($"-> <{pointsTo.ToUpper()}>{valueHex[2..]}");
+        ImGui.PopStyleColor();
     }
 
     public override void DrawCSharpCode()
