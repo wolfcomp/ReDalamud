@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using YamlDotNet;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -10,7 +11,7 @@ public class Data
     public string Version;
     public Dictionary<ulong, string> Globals;
     public Dictionary<ulong, string> Functions;
-    public Dictionary<string, DataClass> Classes;
+    public Dictionary<string, DataClass?> Classes;
     public FastLookupList<DataVtableLookup> VtableLookup = [];
 
     public static bool ParseYaml(string path, ulong baseAddress, [NotNullWhen(true)] out Data? data)
@@ -52,17 +53,17 @@ public class Data
 
 public class DataClass
 {
-    public List<DataOffsetDefinition> Instances;
-    public List<DataOffsetDefinition> Vtbls;
-    public Dictionary<ulong, string> Funcs;
-    public Dictionary<ulong, string> Vfuncs;
+    public List<DataOffsetDefinition>? Instances;
+    public List<DataOffsetDefinition>? Vtbls;
+    public Dictionary<ulong, string>? Funcs;
+    public Dictionary<ulong, string>? Vfuncs;
 }
 
 public class DataOffsetDefinition
 {
     public ulong Ea;
-    public string Base;
-    public bool Pointer;
+    public string? Base;
+    public bool? Pointer;
 }
 
 public record DataVtableLookup(DataOffsetDefinition Vtable, string ClassName, int Index);
