@@ -49,6 +49,8 @@ public class Data
             }
         }
 
+        data.VtableLookup.Sort((a,b) => a.Vtable.Ea.CompareTo(b.Vtable.Ea));
+
         return true;
     }
 }
