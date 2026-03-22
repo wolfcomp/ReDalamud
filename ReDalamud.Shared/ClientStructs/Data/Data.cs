@@ -29,13 +29,15 @@ public class Data
         for (var i = 0; i < data.Classes.Count; i++)
         {
             var (name, value) = data.Classes.ElementAt(i);
-            if (value is null or { Instances: null }) continue;
-            foreach (var instance in value.Instances)
+            if (value is null) continue;
+            if (value.Instances is not null)
             {
-                instance.Ea -= 0x140000000;
-                instance.Ea += baseAddress;
+                foreach (var instance in value.Instances)
+                {
+                    instance.Ea -= 0x140000000;
+                    instance.Ea += baseAddress;
+                }
             }
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             if (value.Vtbls is null) continue;
 
             var j = 0;
