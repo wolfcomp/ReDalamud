@@ -32,14 +32,15 @@ public unsafe partial class MemoryRead
         return result;
     }
 
-    public static string IsInRegion(nint address)
+    public static bool TryGetRegionName(nint address, out string regionName)
     {
         lock (MemoryRegions)
         {
+            regionName = "";
             var memoryRegion = MemoryRegions.FindFromNeedle(t => t.BaseAddress, (a,b) => (a.BaseAddress <= address && b.BaseAddress + b.Size >= address, a.BaseAddress + a.Size >= address), address);
             if (memoryRegion.BaseAddress <= address && memoryRegion.BaseAddress + memoryRegion.Size >= address)
-                return !string.IsNullOrWhiteSpace(memoryRegion.Name) ? memoryRegion.Name : memoryRegion.Category.ToString();
-            return "";
+                regionName = !string.IsNullOrWhiteSpace(memoryRegion.Name) ? memoryRegion.Name : memoryRegion.Category.ToString();
+            return !string.IsNullOrWhiteSpace(regionName);
         }
     }
 
@@ -127,7 +128,21 @@ public unsafe partial class MemoryRead
         }
     }
 
-    public static nint OpenProcess(string processName, ProcessAccessFlags flags = ProcessAccessFlags.PROCESS_VM_ALL)
+    public static bool TryOpenProcess(string processName)
+    {
+        try
+        {
+            OpenProcess(processName);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
+        return true;
+    }
+
+    public static void OpenProcess(string processName, ProcessAccessFlags flags = ProcessAccessFlags.PROCESS_VM_ALL)
     {
         var process = Process.GetProcessesByName(processName).FirstOrDefault();
 
@@ -135,8 +150,6 @@ public unsafe partial class MemoryRead
         ProcessName = processName;
         OpenedProcessHandle = OpenProcess((uint)flags, false, process.Id);
         ScanAllProcessMemoryRegions();
-
-        return OpenedProcessHandle;
     }
 
     public static byte[] ReadBytes(nint address, int size)
