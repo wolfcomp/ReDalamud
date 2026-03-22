@@ -24,20 +24,7 @@ public class Program
         }
         Config.Load();
 
-        var process = MemoryRead.OpenProcess("ffxiv_dx11");
-
-        if (process != nint.Zero)
-        {
-            Console.WriteLine("Opened process successfully");
-            StaticClassView.CurrentClassView = new ClassRenderer(MemoryRead.GetOpenedProcessAddress());
-            _timer = new Timer(_ => MemoryRead.ScanAllProcessMemoryRegions(), null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
-            Task.Run(ClassList.InitTypes);
-            Task.Run(EnumList.InitTypes);
-        }
-        else
-        {
-            Console.WriteLine("Failed to open process");
-        }
+        OpenProcess();
 
         var imGuiCols = Enum.GetValues<ImGuiCol>().Where(t => t != ImGuiCol.Count).ToList();
         var imGuiStyleVars = Enum.GetValues<ImGuiStyleVar>().Where(t => t != ImGuiStyleVar.Count).ToList();
@@ -87,5 +74,19 @@ public class Program
         _timer?.Dispose();
         MemoryRead.Dispose();
         SDL.Quit();
+    }
+
+    public static void OpenProcess()
+    {
+        var process = MemoryRead.TryOpenProcess("ffxiv_dx11");
+
+        if (process)
+        {
+            Console.WriteLine("Opened process successfully");
+            StaticClassView.CurrentClassView = new ClassRenderer(MemoryRead.GetOpenedProcessAddress());
+            _timer = new Timer(_ => MemoryRead.ScanAllProcessMemoryRegions(), null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
+            Task.Run(ClassList.InitTypes);
+            Task.Run(EnumList.InitTypes);
+        }
     }
 }
